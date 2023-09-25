@@ -8,7 +8,7 @@ const { launch, getStream } = require("puppeteer-stream");
 const { exec } = require("child_process");
 const utils = require("./utils/_utils");
 
-async function saveStream() {
+async function saveStream(url) {
 
     // Launch the browser and open a new blank page
     const browser = await launch({
@@ -40,7 +40,7 @@ async function saveStream() {
     });
 
     // Navigate the page to a URL
-    await page.goto('https://www.youtube.com/watch?v=pat2c33sbog', {timeout: 0});
+    await page.goto(url ? url : 'https://www.youtube.com/watch?v=pat2c33sbog1', {timeout: 0});
 
     const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
     console.log("recording");
@@ -76,4 +76,6 @@ async function saveStream() {
     // await browser.close();
 }
 
-saveStream();
+module.exports = {
+    saveStream: saveStream
+};
