@@ -1,12 +1,5 @@
-// import puppeteer from 'puppeteer';
-// import { launch, getStream } from "puppeteer-stream";
-// import { fs } from "fs";
-
-//home/aleksei/Study/iti0303
-///home/aleksei/.cache/puppeteer/chrome/linux-117.0.5938.88/chrome-linux64/chrome
 const { launch, getStream } = require("puppeteer-stream");
 const { exec } = require("child_process");
-const utils = require("./utils/_utils");
 
 async function saveStream(url) {
 
@@ -73,7 +66,7 @@ async function saveStream(url) {
         console.log("finished");
     }, 1000 * 30);
 
-    // await browser.close();
+    // await browser.close(); // TODO: revert comment. right now it broke stream closing and media saving
 }
 
 module.exports = {
