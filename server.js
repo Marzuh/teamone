@@ -29,7 +29,7 @@ const csvWriter = createCsvWriter({
 });
 
 // POST-маршрут для обработки формы и вызова метода saveStream
-app.post('/save', async (req, res) => {
+app.post('/save',  (req, res) => {
     const {url, startTime, username, password} = req.body;
 
     // Генерируйте уникальный идентификатор (например, временную метку)
@@ -41,10 +41,9 @@ app.post('/save', async (req, res) => {
 
 
     // Запишите данные в CSV-файл
-    await csvWriter.writeRecords([data])
+    csvWriter.writeRecords([data])
         .then(() => {
             console.log('Данные успешно сохранены в CSV-файл.');
-            res.send('Данные успешно сохранены в CSV-файл.');
         })
         .catch((error) => {
             console.error('Ошибка при сохранении данных:', error);
@@ -52,7 +51,7 @@ app.post('/save', async (req, res) => {
         });
 
     // Здесь вызывайте метод saveStream из streamSaver.js с передачей URL и выполнением записи
-    // streamSaver.saveStream(url);
+    streamSaver.saveStream(url, username);
     res.send('Ваш запрос принят в обработку');
 });
 
