@@ -1,11 +1,12 @@
 const { launch, getStream } = require("puppeteer-stream");
 const { exec } = require("child_process");
+const fs = require('fs');
 
 async function saveStream(url, username) {
 
     // Launch the browser and open a new blank page
     const browser = await launch({
-        headless: true,
+        headless: false,
         executablePath: 'C:\\\\\\\\Program Files\\\\\\\\Google\\\\\\\\Chrome\\\\\\\\Application\\\\\\\\chrome.exe',
         timeout: 0,
         ignoreDefaultArgs: ['--enable-automation'],
@@ -38,7 +39,7 @@ async function saveStream(url, username) {
     const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
     console.log("recording");
 
-    const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac "C:\\\\\\\\Users\\\\\\\\volos\\\\\\\\OneDrive\\\\\\\\Документы\\\\\\\\Diskreetne Matemaatika 2\\\\\\\\output4.mp4"`);
+    const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac "C:\\\\\\\\Users\\\\\\\\volos\\\\\\\\OneDrive\\\\\\\\Документы\\\\\\\\Diskreetne Matemaatika 2\\\\\\\\output5.mp4"`);
     ffmpeg.stderr.on("data", (chunk) => {
         console.log(chunk.toString());
     });
@@ -86,6 +87,18 @@ async function saveStream(url, username) {
 
     await iframeContentFrame.waitForSelector(joinButton, {timeout: 30000});
     await iframeContentFrame.click(joinButton);
+
+    await page.waitForTimeout(10000);
+
+    const html = await newPage.evaluate(() => {
+        // This code is executed within the page context
+        // Use document.documentElement.outerHTML to get the entire HTML content
+        return document.querySelector("#app > div > div > div > div.fluent-ui-component.a.bb.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.ab.ac.ae.af > div > div > div.fui-Flex.___qud7ig0.f22iagw.f1vx9l62.fly5x3f.f1l02sjl.f10pi13n > div.fui-Flex.___1oslqzm.f22iagw.fly5x3f.f1l02sjl.f1jhi6b8.f1p9o1ba.f1sil6mw > div > div > div > div > div").outerHTML;
+    });
+
+    // Save the HTML content to a file
+    fs.writeFileSync('output.html', html, 'utf-8');
+    console.log('HTML content saved to output.html');
 
     setTimeout(async () => {
         stream.destroy();
