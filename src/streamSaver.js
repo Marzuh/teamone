@@ -1,8 +1,8 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
+const logger = require('./logger');
 
 async function saveStream(url) {
-  // Launch the browser and open a new blank page
   const browser = await launch({
     headless: false,
     executablePath: '/usr/bin/google-chrome',
@@ -33,31 +33,30 @@ async function saveStream(url) {
   await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', { timeout: 0 });
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
-  console.log('recording');
+  logger.debug('recording from %s', url);
 
   const ffmpeg = exec('ffmpeg -y -i - -c:v libx264 -c:a aac /home/aleksei/Study/iti0303/saved_video/output.mp4');
   ffmpeg.stderr.on('data', (chunk) => {
-    console.log(chunk.toString());
+    logger.debug('stream data event occurs. Chunk: %s', chunk.toString());
   });
 
   stream.on('close', () => {
-    console.log('stream close');
+    logger.debug('stream close event occurs');
     ffmpeg.stdin.end();
   });
 
   stream.pipe(ffmpeg.stdin);
 
   // Wait and click on decline all
-  console.log('start to wait selector');
+  logger.debug('start to wait selector');
   const declineButtonSelector = '.eom-button-row button';
   await page.waitForSelector(declineButtonSelector, { timeout: 30000 });
   await page.click(declineButtonSelector);
-  console.log('selector clicked');
+  logger.debug('selector clicked');
 
   setTimeout(async () => {
+    logger.debug('stream destroyed by timer');
     stream.destroy();
-
-    console.log('finished');
   }, 1000 * 30);
 
   // TODO: revert comment. right now it broke stream closing and media saving
