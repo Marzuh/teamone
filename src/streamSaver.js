@@ -41,7 +41,7 @@ async function saveStream(url, username) {
   await page.waitForTimeout(6000);
 
   console.log('start to wait selector  CONTINUEONBROWSER');
-  const continueOnBrowserSelector = '#container > div > div > div.mainActionsContent > div.actionsContainer > div > button.btn.secondary > div > h3';
+  const continueOnBrowserSelector = '.btn.secondary ';
   await page.waitForSelector(continueOnBrowserSelector, {timeout: 30000});
   await page.click(continueOnBrowserSelector);
   console.log('selector clicked  CONTINUEONBROWSER');
@@ -51,9 +51,9 @@ async function saveStream(url, username) {
 
   // Selectors within the iFrame
   const joinButton = '#prejoin-join-button';
-  const inputFieldSelector = '#app > div > div > div > div.fluent-ui-component.a.bb.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.ab.ac.ae.af > div > div > div > div > div.fui-Flex.___1mh95rt.f22iagw.f4d9j23.f122n59.f106ow9f.fyw3hzw.fcyhscq > div > div.fui-Flex.___1gzszts.f22iagw > span > input';
-  const turnOffCameraSelector = "#app > div > div > div > div.fluent-ui-component.a.bb.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.ab.ac.ae.af > div > div > div > div > div.fui-Flex.___zb4aq60.f22iagw.f1vx9l62.f2q8o33 > div.fui-Flex.___1ee5yt8.f22iagw.f6jr5hl.f1869bpl.fwo5xp5.fdtf0n.f96nzly > div > div.fui-Flex.___1mal4v8.f22iagw.f4d9j23.f122n59.fly5x3f.f1l02sjl.fxugw4r.f1jhi6b8.fi64zpg.f17gev4g.f118ihkj.fzkkow9.f68mrw8.f1aa9q02.f16jpd5f.f40v2ht.fw294f7 > div > div:nth-child(2) > div:nth-child(2) > div.ui-checkbox.e.bt.bu.bv.bw.bx.ho.by.bz.ca.cb.cc.cd.ce.cf.cg.ch.ci.cj.cl.cm.cn.co.cp.cq.cr.cs.ct.cu.cv.cw.cx.cy.cz.da.db.dc.dd.de.df.dg.dh.di.dj.dk.dl.dm.dn.do.dp.dq.dr.ds.dt.du.dv.dw.dx.dy.dz.ea.eb.ec.ed.ee.ef.eg.eh.ei.hp.hq.hr.hs.en.eo.ep.eq.er.es.fh.ht.fj.hu.hv.hw.fm.fn > div"
-  const turnOffMicroSelector = "#app > div > div > div > div.fluent-ui-component.a.bb.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.ab.ac.ae.af > div > div > div > div > div.fui-Flex.___zb4aq60.f22iagw.f1vx9l62.f2q8o33 > div.fui-Flex.___1ee5yt8.f22iagw.f6jr5hl.f1869bpl.fwo5xp5.fdtf0n.f96nzly > div > div.fui-Flex.___1mal4v8.f22iagw.f4d9j23.f122n59.fly5x3f.f1l02sjl.fxugw4r.f1jhi6b8.fi64zpg.f17gev4g.f118ihkj.fzkkow9.f68mrw8.f1aa9q02.f16jpd5f.f40v2ht.fw294f7 > div > div:nth-child(2) > div:nth-child(1) > div.ui-checkbox.e.bt.bu.bv.bw.bx.ho.by.bz.ca.cb.cc.cd.ce.cf.cg.ch.ci.cj.cl.cm.cn.co.cp.cq.cr.cs.ct.cu.cv.cw.cx.cy.cz.da.db.dc.dd.de.df.dg.dh.di.dj.dk.dl.dm.dn.do.dp.dq.dr.ds.dt.du.dv.dw.dx.dy.dz.ea.eb.ec.ed.ee.ef.eg.eh.ei.hp.hq.hr.hs.en.eo.ep.eq.er.es.fh.ht.fj.hu.hv.hw.fm.fn > div"
+  const inputFieldSelector = '.fluent-ui-component input';
+  const turnOffCameraSelector = ".ui-checkbox.e"
+  const turnOffMicroSelector = ".ui-checkbox.ho"
 
   // Handling the iFrames
   const iframe = await newPage.$("iframe")
