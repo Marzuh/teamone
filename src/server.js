@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser'); // For parsing form data
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const logger = require('./logger');
 const streamSaver = require('./streamSaver');
 
 const app = express();
@@ -39,15 +40,15 @@ app.post('/save', (req, res) => {
   const data = {
     id, url, startTime, username, password,
   };
-  console.log(data);
+  logger.debug('New task with data: %s', data);
 
   // Write the data to the CSV file
   csvWriter.writeRecords([data])
     .then(() => {
-      console.log('Data successfully saved to the CSV file.');
+      logger.info('Data successfully saved to the CSV file.');
     })
     .catch((error) => {
-      console.error('Error while saving data:', error);
+      logger.error('Error while saving data:', error);
       res.status(500).send('Error while saving data.');
     });
 
@@ -57,5 +58,5 @@ app.post('/save', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info(`Server is running on port ${port}`);
 });
