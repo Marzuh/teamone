@@ -41,7 +41,7 @@ async function saveStream(url, username) {
   await page.waitForTimeout(6000);
 
   console.log('start to wait selector  CONTINUEONBROWSER');
-  const continueOnBrowserSelector = '#container > div > div > div.mainActionsContent > div.actionsContainer > div > button.btn.primary';
+  const continueOnBrowserSelector = '#container > div > div > div.mainActionsContent > div.actionsContainer > div > button.btn.secondary > div > h3';
   await page.waitForSelector(continueOnBrowserSelector, {timeout: 30000});
   await page.click(continueOnBrowserSelector);
   console.log('selector clicked  CONTINUEONBROWSER');
