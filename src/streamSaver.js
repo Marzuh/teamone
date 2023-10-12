@@ -1,12 +1,12 @@
-const { launch, getStream } = require("puppeteer-stream");
-const { exec } = require("child_process");
+const {launch, getStream} = require("puppeteer-stream");
+const {exec} = require("child_process");
 
 async function saveStream(url, username) {
 
     // Launch the browser and open a new blank page
     const browser = await launch({
         headless: true,
-        executablePath: 'C:\\\\\\\\Program Files\\\\\\\\Google\\\\\\\\Chrome\\\\\\\\Application\\\\\\\\chrome.exe',
+        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         timeout: 0,
         ignoreDefaultArgs: ['--enable-automation'],
         args: ['--start-maximized']
@@ -35,10 +35,10 @@ async function saveStream(url, username) {
     // Navigate the page to a URL
     await page.goto(url ? url : 'https://www.youtube.com/watch?v=pat2c33sbog1', {timeout: 0});
 
-    const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
+    const stream = await getStream(page, {audio: true, video: true, frameSize: 1000});
     console.log("recording");
 
-    const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac "C:\\\\\\\\Users\\\\\\\\volos\\\\\\\\OneDrive\\\\\\\\Документы\\\\\\\\Diskreetne Matemaatika 2\\\\\\\\output4.mp4"`);
+    const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac "C:\\Users\\narti\\studies\\iti0303\\output4.mp4"`);
     ffmpeg.stderr.on("data", (chunk) => {
         console.log(chunk.toString());
     });
@@ -73,18 +73,18 @@ async function saveStream(url, username) {
     const iframe = await newPage.$("iframe")
     const iframeContentFrame = await iframe.contentFrame();
 
-    await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: 9000 });
+    await iframeContentFrame.waitForSelector(turnOffCameraSelector, {timeout: 9000});
     await iframeContentFrame.click(turnOffCameraSelector);
 
-    await iframeContentFrame.waitForSelector(turnOffMicroSelector, {timeout: 30000});
+    await iframeContentFrame.waitForSelector(turnOffMicroSelector, {timeout: 40000});
     await iframeContentFrame.click(turnOffMicroSelector);
 
 
     // Joining to meeting as a guest
-    await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: 9000 });
+    await iframeContentFrame.waitForSelector(inputFieldSelector, {timeout: 9000});
     await iframeContentFrame.type(inputFieldSelector, username);
 
-    await iframeContentFrame.waitForSelector(joinButton, {timeout: 30000});
+    await iframeContentFrame.waitForSelector(joinButton, {timeout: 40000});
     await iframeContentFrame.click(joinButton);
 
     setTimeout(async () => {
