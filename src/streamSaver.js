@@ -6,7 +6,6 @@ const logger = require('./logger');
 async function saveStream(url) {
   const browser = await launch({
     headless: false,
-    // executablePath: '/usr/bin/google-chrome',
     executablePath: executablePath(),
     timeout: 0,
     ignoreDefaultArgs: ['--enable-automation'],
