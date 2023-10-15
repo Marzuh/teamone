@@ -40,25 +40,25 @@ async function saveStream(url, username) {
   await page.waitForTimeout(6000);
 
   logger.debug('start to wait selector  CONTINUEONBROWSER')
-  const continueOnBrowserSelector = '.btn.secondary ';
+  const continueOnBrowserSelector = 'button.btn.primary';
   await page.waitForSelector(continueOnBrowserSelector, {timeout: 30000});
   await page.click(continueOnBrowserSelector);
   logger.debug('selector clicked  CONTINUEONBROWSER')
 
-  const newPageTarget = await browser.waitForTarget(target => target.url() === 'https://teams.live.com/_#/modern-calling/');
+  const newPageTarget = await browser.waitForTarget(target => target.url() === 'https://teams.microsoft.com/_#/modern-calling/');
   const newPage = await newPageTarget.page();
 
   // Selectors within the iFrame
   const joinButton = '#prejoin-join-button';
   const inputFieldSelector = '.fluent-ui-component input';
-  const turnOffCameraSelector = ".ui-checkbox.e"
+  const turnOffCameraSelector = "div.ui-checkbox.e.eh.ei"
   const turnOffMicroSelector = ".ui-checkbox.ho"
 
   // Handling the iFrames
   const iframe = await newPage.$("iframe")
   const iframeContentFrame = await iframe.contentFrame();
 
-  await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: 9000 });
+  await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: 30000 });
   await iframeContentFrame.click(turnOffCameraSelector);
 
   await iframeContentFrame.waitForSelector(turnOffMicroSelector, {timeout: 30000});
@@ -66,7 +66,7 @@ async function saveStream(url, username) {
 
 
   // Joining to meeting as a guest
-  await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: 9000 });
+  await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: 30000 });
   await iframeContentFrame.type(inputFieldSelector, username);
 
   await iframeContentFrame.waitForSelector(joinButton, {timeout: 30000});
