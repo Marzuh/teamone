@@ -1,11 +1,12 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
+const { executablePath } = require('puppeteer');
 const logger = require('./logger');
 
 async function saveStream(url) {
   const browser = await launch({
     headless: false,
-    executablePath: '/usr/bin/google-chrome',
+    executablePath: executablePath(),
     timeout: 0,
     ignoreDefaultArgs: ['--enable-automation'],
     args: ['--start-maximized'],
