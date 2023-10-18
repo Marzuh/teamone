@@ -39,37 +39,46 @@ async function saveStream(url, username) {
   // Instead of waiting must be implemented a native alert automation dismiss (possible ???) or trying to click until clicking is available (loop ?)
   await page.waitForTimeout(6000);
 
-  logger.debug('start to wait selector  CONTINUEONBROWSER')
   const continueOnBrowserSelector = 'button.btn.primary';
+  logger.debug(`Waiting for "${continueOnBrowserSelector}".`);
   await page.waitForSelector(continueOnBrowserSelector, {timeout: 30000});
+  logger.debug(`Selector "${continueOnBrowserSelector}" is found.`);
   await page.click(continueOnBrowserSelector);
-  logger.debug('selector clicked  CONTINUEONBROWSER')
 
+  logger.debug(`Waiting for target URL`);
   const newPageTarget = await browser.waitForTarget(target => target.url() === 'https://teams.microsoft.com/_#/modern-calling/');
+  logger.debug(`Target URL found`);
   const newPage = await newPageTarget.page();
 
   // Selectors within the iFrame
   const joinButton = '#prejoin-join-button';
   const inputFieldSelector = '.fluent-ui-component input';
-  const turnOffCameraSelector = "div.ui-checkbox.e.eh.ei"
-  const turnOffMicroSelector = ".ui-checkbox.ho"
+  const turnOffCameraSelector = "#app .fui-Flex.___1mal4v8 .ui-checkbox";
+  const turnOffMicroSelector = "#app .fui-Flex.___1gzszts .ui-checkbox";
 
   // Handling the iFrames
   const iframe = await newPage.$("iframe")
   const iframeContentFrame = await iframe.contentFrame();
 
+  logger.debug(`Waiting for "${turnOffCameraSelector}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: 30000 });
+  logger.debug(`Selector "${turnOffCameraSelector}" found in the iframe content frame.`);
   await iframeContentFrame.click(turnOffCameraSelector);
 
-  await iframeContentFrame.waitForSelector(turnOffMicroSelector, {timeout: 30000});
+  logger.debug(`Waiting for "${turnOffMicroSelector}" in the iframe content frame.`);
+  await iframeContentFrame.waitForSelector(turnOffMicroSelector, { timeout: 30000 });
+  logger.debug(`Selector "${turnOffMicroSelector}" found in the iframe content frame.`);
   await iframeContentFrame.click(turnOffMicroSelector);
 
-
-  // Joining to meeting as a guest
+// Joining the meeting as a guest
+  logger.debug(`Waiting for "${inputFieldSelector}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: 30000 });
+  logger.debug(`Selector "${inputFieldSelector}" found in the iframe content frame.`);
   await iframeContentFrame.type(inputFieldSelector, username);
 
-  await iframeContentFrame.waitForSelector(joinButton, {timeout: 30000});
+  logger.debug(`Waiting for "${joinButton}" in the iframe content frame.`);
+  await iframeContentFrame.waitForSelector(joinButton, { timeout: 30000 });
+  logger.debug(`Selector "${joinButton}" found in the iframe content frame.`);
   await iframeContentFrame.click(joinButton);
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
