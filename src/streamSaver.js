@@ -1,14 +1,12 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
+const { executablePath } = require('puppeteer');
 const logger = require('./logger');
-const fs = require('fs');
 
 async function saveStream(url, username) {
-
-  // Launch the browser and open a new blank page
   const browser = await launch({
     headless: false,
-    executablePath: 'C:\\\\\\\\Program Files\\\\\\\\Google\\\\\\\\Chrome\\\\\\\\Application\\\\\\\\chrome.exe',
+    executablePath: executablePath(),
     timeout: 0,
     ignoreDefaultArgs: ['--enable-automation'],
     args: ['--start-maximized'],
@@ -33,7 +31,7 @@ async function saveStream(url, username) {
   });
 
   // Navigate the page to a URL
-  await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', {timeout: 0});
+  await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', { timeout: 0 });
 
 
   // Instead of waiting must be implemented a native alert automation dismiss (possible ???) or trying to click until clicking is available (loop ?)
