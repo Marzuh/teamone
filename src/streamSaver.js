@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const logger = require('./logger');
 
 const browserPath = '/usr/bin/google-chrome';
+//const browserPath = 'C:\\\\\\\\\\\\\\\\Program Files\\\\\\\\\\\\\\\\Google\\\\\\\\\\\\\\\\Chrome\\\\\\\\\\\\\\\\Application\\\\\\\\\\\\\\\\chrome.exe';
 
 async function saveStream(url, username) {
   const browser = await launch({
