@@ -1,14 +1,15 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
-const { executablePath } = require('puppeteer');
 const logger = require('./logger');
+
+const browserPath = '/usr/bin/google-chrome';
 
 async function saveStream(url, username) {
   const browser = await launch({
     headless: false,
-    executablePath: executablePath(),
+    executablePath: browserPath,
     timeout: 0,
-    ignoreDefaultArgs: ['--enable-automation'],
+    ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
     args: ['--start-maximized'],
   });
 
@@ -80,10 +81,15 @@ async function saveStream(url, username) {
   await iframeContentFrame.click(joinButton);
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
-  logger.debug('recording from %s', url);
+  const resolution = '1280*720';
+  const frameRate = 30;
+  const datetime = Date.now().toString();
+  const saveDirectoryPath = `/home/aleksei/Study/iti0303/saved_video/${datetime}.mp4`;
 
-  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac "C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt\\outputVideo.mp4"`);
-  ffmpeg.stderr.on("data", (chunk) => {
+  logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
+
+  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${saveDirectoryPath}`);
+  ffmpeg.stderr.on('data', (chunk) => {
     logger.debug('stream data event occurs. Chunk: %s', chunk.toString());
   });
 
