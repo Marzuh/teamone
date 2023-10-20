@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 const logger = require('./logger');
 
 const browserPath = '/usr/bin/google-chrome';
-//const browserPath = 'C:\\\\\\\\\\\\\\\\Program Files\\\\\\\\\\\\\\\\Google\\\\\\\\\\\\\\\\Chrome\\\\\\\\\\\\\\\\Application\\\\\\\\\\\\\\\\chrome.exe';
+//const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 async function saveStream(url, username) {
   const browser = await launch({
@@ -13,6 +13,8 @@ async function saveStream(url, username) {
     ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
     args: ['--start-maximized'],
   });
+
+  const timeoutDuration = 10000;
 
   const page = await browser.newPage();
 
@@ -33,15 +35,16 @@ async function saveStream(url, username) {
   });
 
   // Navigate the page to a URL
-  await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', { timeout: 0 });
+  await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', { timeout: timeoutDuration });
 
 
   // Instead of waiting must be implemented a native alert automation dismiss (possible ???) or trying to click until clicking is available (loop ?)
   await page.waitForTimeout(6000);
 
-  const continueOnBrowserSelector = 'button.btn.primary';
+  // Continue meeting on browse
+  const continueOnBrowserSelector = 'button[data-tid="joinOnWeb"]';
   logger.debug(`Waiting for "${continueOnBrowserSelector}".`);
-  await page.waitForSelector(continueOnBrowserSelector, {timeout: 30000});
+  await page.waitForSelector(continueOnBrowserSelector, {timeout: timeoutDuration});
   logger.debug(`Selector "${continueOnBrowserSelector}" is found.`);
   await page.click(continueOnBrowserSelector);
 
@@ -50,34 +53,59 @@ async function saveStream(url, username) {
   logger.debug(`Target URL found`);
   const newPage = await newPageTarget.page();
 
-  // Selectors within the iFrame
-  const joinButton = '#prejoin-join-button';
-  const inputFieldSelector = '.fluent-ui-component input';
-  const turnOffCameraSelector = "#app .fui-Flex.___1mal4v8 .ui-checkbox";
-  const turnOffMicroSelector = "#app .fui-Flex.___1gzszts .ui-checkbox";
-
   // Handling the iFrames
   const iframe = await newPage.$("iframe")
   const iframeContentFrame = await iframe.contentFrame();
 
+  // Turn off the camera if it is on
+  const turnOffCameraSelector = 'div[role="checkbox"][data-tid="toggle-video"]';
   logger.debug(`Waiting for "${turnOffCameraSelector}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: 30000 });
+  await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: timeoutDuration });
   logger.debug(`Selector "${turnOffCameraSelector}" found in the iframe content frame.`);
-  await iframeContentFrame.click(turnOffCameraSelector);
 
-  logger.debug(`Waiting for "${turnOffMicroSelector}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(turnOffMicroSelector, { timeout: 30000 });
-  logger.debug(`Selector "${turnOffMicroSelector}" found in the iframe content frame.`);
-  await iframeContentFrame.click(turnOffMicroSelector);
+  // Check the camera current state
+  const cameraState = await iframeContentFrame.evaluate(selector => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffCameraSelector);
+  logger.debug(`Camera current state: ${cameraState}`);
 
-// Joining the meeting as a guest
+  if (cameraState === 'toggle-video-true') {
+    await iframeContentFrame.click(turnOffCameraSelector);
+  } else {
+    logger.debug('Camera is already turned off.');
+  }
+
+  // Turn off the microphone
+  const turnOffMicrophoneSelector = 'div[role="checkbox"][data-tid="toggle-mute"]';
+  logger.debug(`Waiting for "${turnOffMicrophoneSelector}" in the iframe content frame.`);
+  await iframeContentFrame.waitForSelector(turnOffMicrophoneSelector, { timeout: timeoutDuration });
+  logger.debug(`Selector "${turnOffMicrophoneSelector}" found in the iframe content frame.`);
+
+  // Check the microphone current state
+  const microphoneState = await iframeContentFrame.evaluate(selector => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffMicrophoneSelector);
+  logger.debug(`Microphone current state: ${microphoneState}`);
+
+  if (microphoneState === 'toggle-mute-true') {
+    await iframeContentFrame.click(turnOffMicrophoneSelector);
+  } else {
+    logger.debug('Microphone is already turned off.');
+  }
+
+  // Input name
+  const inputFieldSelector = 'input[data-tid="prejoin-display-name-input"]';
   logger.debug(`Waiting for "${inputFieldSelector}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: 30000 });
+  await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: timeoutDuration });
   logger.debug(`Selector "${inputFieldSelector}" found in the iframe content frame.`);
   await iframeContentFrame.type(inputFieldSelector, username);
 
+  // Joining to the meeting as a guest
+  const joinButton = '#prejoin-join-button';
   logger.debug(`Waiting for "${joinButton}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(joinButton, { timeout: 30000 });
+  await iframeContentFrame.waitForSelector(joinButton, { timeout: timeoutDuration });
   logger.debug(`Selector "${joinButton}" found in the iframe content frame.`);
   await iframeContentFrame.click(joinButton);
 
