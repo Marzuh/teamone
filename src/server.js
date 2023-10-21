@@ -53,7 +53,7 @@ app.post('/save', (req, res) => {
     });
 
   // Call the 'saveStream' method from streamSaver.js with the URL for recording
-  streamSaver.saveStream(url);
+  streamSaver.saveStream(url, username);
   res.send('Your request has been accepted for processing');
 });
 
