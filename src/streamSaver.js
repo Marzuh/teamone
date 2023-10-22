@@ -9,10 +9,10 @@ const browserAgs = {
   headless: false,
   executablePath: browserPath,
   timeout: 0,
-  ignoreDefaultArgs: ['--enable-automation', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-  args: ['--start-maximized'],
+  ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
+  args: ['--start-fullscreen'],
 };
-
+//   args: ['--start-maximized'] use this args for default browser view
 const timeoutDuration = 0;
 
 async function chooseMeetingInBrowser(page) {
@@ -44,6 +44,12 @@ async function turnOffCamera(iframeContentFrame) {
   } else {
     logger.debug('Camera is already turned off.');
   }
+
+  const cameraStateAfter = await iframeContentFrame.evaluate((selector) => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffCameraSelector);
+  logger.info(`Camera pre-login state: ${cameraStateAfter}`);
 }
 
 async function turnOffMicrophone(iframeContentFrame) {
@@ -63,6 +69,11 @@ async function turnOffMicrophone(iframeContentFrame) {
   } else {
     logger.debug('Microphone is already turned off.');
   }
+  const microphoneStateAfter = await iframeContentFrame.evaluate((selector) => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffMicrophoneSelector);
+  logger.info(`Microphone pre-login state: ${microphoneStateAfter}`);
 }
 
 async function enterUsername(iframeContentFrame, username) {
@@ -93,8 +104,19 @@ async function setupPageViewport(page) {
   });
 }
 
+async function closeNoCameraNotification(iframeContentFrame) {
+  const closeNotificationButton = 'button#close_button';
+  logger.debug(`Waiting for "${closeNotificationButton}" in the iframe content frame.`);
+  await iframeContentFrame.waitForSelector(closeNotificationButton, { timeout: timeoutDuration });
+  logger.debug(`Selector "${closeNotificationButton}" found in the iframe content frame.`);
+  await iframeContentFrame.click(closeNotificationButton);
+}
+
 async function saveStream(url, username) {
   const browser = await launch(browserAgs);
+  const context = browser.defaultBrowserContext();
+  await context.clearPermissionOverrides();
+  await context.overridePermissions('https://teams.microsoft.com', ['camera', 'microphone']);
   const page = await browser.newPage();
 
   const pages = await browser.pages();
@@ -102,6 +124,7 @@ async function saveStream(url, username) {
   await setupPageViewport(page);
 
   await page.goto(url, { timeout: timeoutDuration });
+
   await chooseMeetingInBrowser(page);
 
   await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/_#/modern-calling/', { timeout: timeoutDuration });
@@ -112,6 +135,7 @@ async function saveStream(url, username) {
   await turnOffMicrophone(iframeContentFrame);
   await enterUsername(iframeContentFrame, username);
   await joinTheMeeting(iframeContentFrame);
+  await closeNoCameraNotification(iframeContentFrame);
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
