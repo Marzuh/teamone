@@ -3,68 +3,37 @@ const { exec } = require('child_process');
 const logger = require('./logger');
 
 const browserPath = '/usr/bin/google-chrome';
-//const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
 
-async function saveStream(url, username) {
-  const browser = await launch({
-    headless: false,
-    executablePath: browserPath,
-    timeout: 0,
-    ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
-    args: ['--start-maximized'],
-  });
+const browserAgs = {
+  headless: false,
+  executablePath: browserPath,
+  timeout: 0,
+  ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
+  args: ['--start-fullscreen'],
+};
+//   args: ['--start-maximized'] use this args for default browser view
+const timeoutDuration = 0;
 
-  const timeoutDuration = 10000;
-
-  const page = await browser.newPage();
-
-  const pages = await browser.pages();
-  if (pages.length > 1) {
-    await pages[0].close();
+async function chooseMeetingInBrowser(page) {
+  try {
+    const continueOnBrowserSelector = 'button[data-tid="joinOnWeb"]';
+    logger.debug(`Waiting for "${continueOnBrowserSelector}".`);
+    await page.waitForSelector(continueOnBrowserSelector, { timeout: 5000 });
+    logger.debug(`Selector "${continueOnBrowserSelector}" is found.`);
+    await page.click(continueOnBrowserSelector);
+  } catch (error) {
+    logger.debug('Error caught for no continueOnBrowserSelector.');
   }
+}
 
-  const screenResolution = await page.evaluate(() => ({
-    width: window.screen.width,
-    height: window.screen.height,
-  }));
-
-  // Set viewport resolution
-  await page.setViewport({
-    width: screenResolution.width,
-    height: screenResolution.height,
-  });
-
-  // Navigate the page to a URL
-  await page.goto(url || 'https://www.youtube.com/watch?v=pat2c33sbog1', { timeout: timeoutDuration });
-
-
-  // Instead of waiting must be implemented a native alert automation dismiss (possible ???) or trying to click until clicking is available (loop ?)
-  await page.waitForTimeout(6000);
-
-  // Continue meeting on browse
-  const continueOnBrowserSelector = 'button[data-tid="joinOnWeb"]';
-  logger.debug(`Waiting for "${continueOnBrowserSelector}".`);
-  await page.waitForSelector(continueOnBrowserSelector, {timeout: timeoutDuration});
-  logger.debug(`Selector "${continueOnBrowserSelector}" is found.`);
-  await page.click(continueOnBrowserSelector);
-
-  logger.debug(`Waiting for target URL`);
-  const newPageTarget = await browser.waitForTarget(target => target.url() === 'https://teams.microsoft.com/_#/modern-calling/');
-  logger.debug(`Target URL found`);
-  const newPage = await newPageTarget.page();
-
-  // Handling the iFrames
-  const iframe = await newPage.$("iframe")
-  const iframeContentFrame = await iframe.contentFrame();
-
-  // Turn off the camera if it is on
+async function turnOffCamera(iframeContentFrame) {
   const turnOffCameraSelector = 'div[role="checkbox"][data-tid="toggle-video"]';
   logger.debug(`Waiting for "${turnOffCameraSelector}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(turnOffCameraSelector, { timeout: timeoutDuration });
   logger.debug(`Selector "${turnOffCameraSelector}" found in the iframe content frame.`);
 
-  // Check the camera current state
-  const cameraState = await iframeContentFrame.evaluate(selector => {
+  const cameraState = await iframeContentFrame.evaluate((selector) => {
     const element = document.querySelector(selector);
     return element ? element.getAttribute('data-cid') : null;
   }, turnOffCameraSelector);
@@ -76,14 +45,20 @@ async function saveStream(url, username) {
     logger.debug('Camera is already turned off.');
   }
 
-  // Turn off the microphone
+  const cameraStateAfter = await iframeContentFrame.evaluate((selector) => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffCameraSelector);
+  logger.info(`Camera pre-login state: ${cameraStateAfter}`);
+}
+
+async function turnOffMicrophone(iframeContentFrame) {
   const turnOffMicrophoneSelector = 'div[role="checkbox"][data-tid="toggle-mute"]';
   logger.debug(`Waiting for "${turnOffMicrophoneSelector}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(turnOffMicrophoneSelector, { timeout: timeoutDuration });
   logger.debug(`Selector "${turnOffMicrophoneSelector}" found in the iframe content frame.`);
 
-  // Check the microphone current state
-  const microphoneState = await iframeContentFrame.evaluate(selector => {
+  const microphoneState = await iframeContentFrame.evaluate((selector) => {
     const element = document.querySelector(selector);
     return element ? element.getAttribute('data-cid') : null;
   }, turnOffMicrophoneSelector);
@@ -94,20 +69,73 @@ async function saveStream(url, username) {
   } else {
     logger.debug('Microphone is already turned off.');
   }
+  const microphoneStateAfter = await iframeContentFrame.evaluate((selector) => {
+    const element = document.querySelector(selector);
+    return element ? element.getAttribute('data-cid') : null;
+  }, turnOffMicrophoneSelector);
+  logger.info(`Microphone pre-login state: ${microphoneStateAfter}`);
+}
 
-  // Input name
+async function enterUsername(iframeContentFrame, username) {
   const inputFieldSelector = 'input[data-tid="prejoin-display-name-input"]';
   logger.debug(`Waiting for "${inputFieldSelector}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(inputFieldSelector, { timeout: timeoutDuration });
   logger.debug(`Selector "${inputFieldSelector}" found in the iframe content frame.`);
   await iframeContentFrame.type(inputFieldSelector, username);
+}
 
-  // Joining to the meeting as a guest
+async function joinTheMeeting(iframeContentFrame) {
   const joinButton = '#prejoin-join-button';
   logger.debug(`Waiting for "${joinButton}" in the iframe content frame.`);
   await iframeContentFrame.waitForSelector(joinButton, { timeout: timeoutDuration });
   logger.debug(`Selector "${joinButton}" found in the iframe content frame.`);
   await iframeContentFrame.click(joinButton);
+}
+
+async function setupPageViewport(page) {
+  const screenResolution = await page.evaluate(() => ({
+    width: window.screen.width,
+    height: window.screen.height,
+  }));
+
+  await page.setViewport({
+    width: screenResolution.width,
+    height: screenResolution.height,
+  });
+}
+
+async function closeNoCameraNotification(iframeContentFrame) {
+  const closeNotificationButton = 'button#close_button';
+  logger.debug(`Waiting for "${closeNotificationButton}" in the iframe content frame.`);
+  await iframeContentFrame.waitForSelector(closeNotificationButton, { timeout: timeoutDuration });
+  logger.debug(`Selector "${closeNotificationButton}" found in the iframe content frame.`);
+  await iframeContentFrame.click(closeNotificationButton);
+}
+
+async function saveStream(url, username) {
+  const browser = await launch(browserAgs);
+  const context = browser.defaultBrowserContext();
+  await context.clearPermissionOverrides();
+  await context.overridePermissions('https://teams.microsoft.com', ['camera', 'microphone']);
+  const page = await browser.newPage();
+
+  const pages = await browser.pages();
+  await pages[0].close();
+  await setupPageViewport(page);
+
+  await page.goto(url, { timeout: timeoutDuration });
+
+  await chooseMeetingInBrowser(page);
+
+  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/_#/modern-calling/', { timeout: timeoutDuration });
+  const iframe = await page.$('iframe');
+  const iframeContentFrame = await iframe.contentFrame();
+
+  await turnOffCamera(iframeContentFrame);
+  await turnOffMicrophone(iframeContentFrame);
+  await enterUsername(iframeContentFrame, username);
+  await joinTheMeeting(iframeContentFrame);
+  await closeNoCameraNotification(iframeContentFrame);
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
@@ -132,12 +160,12 @@ async function saveStream(url, username) {
   setTimeout(async () => {
     logger.debug('stream destroyed by timer');
     stream.destroy();
-  }, 1000 * 30);
+  }, 1000 * 300);
 
   // TODO: revert comment. right now it broke stream closing and media saving
   // await browser.close();
 }
 
 module.exports = {
-  saveStream: saveStream
+  saveStream,
 };
