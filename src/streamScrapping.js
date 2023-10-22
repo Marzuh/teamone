@@ -11,35 +11,7 @@ const csvWriter = createCsvWriter({
 });
 
 
-async function scrapeStream(url) {
-    const browser = await launch({
-        headless: true,
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\new_chrome.exe',
-        timeout: 0,
-        ignoreDefaultArgs: ['--enable-automation'],
-        args: ['--start-maximized']
-    });
-
-    const page = await browser.newPage();
-
-    // Navigate to the Microsoft Teams meeting URL (replace with the actual meeting URL)
-    await page.goto(url);
-
-    const screenResolution = await page.evaluate(() => {
-        return {
-            width: window.screen.width,
-            height: window.screen.height,
-        };
-    });
-
-    await page.setViewport({
-        width: screenResolution.width,
-        height: screenResolution.height,
-    });
-
-    const newPageTarget = await browser.waitForTarget((target) => target.url() === 'https://teams.live.com/_#/modern-calling/');
-    const newPage = await newPageTarget.page();
-
+async function scrapeStream() {
     //MY
     await csvWriter.writeRecords({
         timestamp: 'Timestamp',
@@ -93,4 +65,6 @@ async function scrapeStream(url) {
     }, 10000);
 }
 
-scrapeStream('https://teams.live.com/meet/9464919624991?p=uxdg85lwKFWmz4eC');
+module.exports = {
+    streamScrapping: scrapeStream
+};

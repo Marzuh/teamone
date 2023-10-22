@@ -1,9 +1,10 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
 const logger = require('./logger');
+const streamScrapping = require('./streamScrapping');
 
-const browserPath = '/usr/bin/google-chrome';
-//const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = '/usr/bin/google-chrome';
+const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 async function saveStream(url, username) {
   const browser = await launch({
@@ -113,9 +114,12 @@ async function saveStream(url, username) {
   const resolution = '1280*720';
   const frameRate = 30;
   const datetime = Date.now().toString();
-  const saveDirectoryPath = `/home/aleksei/Study/iti0303/saved_video/${datetime}.mp4`;
+  const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
+
+  //Start users data scrapping
+  streamScrapping.streamScrapping();
 
   const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${saveDirectoryPath}`);
   ffmpeg.stderr.on('data', (chunk) => {
