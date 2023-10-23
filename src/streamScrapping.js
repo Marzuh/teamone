@@ -2,6 +2,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('./logger');
 
+let intervalId;
 async function scrapeStream(iframeContentFrame, datetime) {
   // eslint-disable-next-line no-template-curly-in-string
   const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path
@@ -59,10 +60,11 @@ async function scrapeStream(iframeContentFrame, datetime) {
   setTimeout(() => {
     pollParticipants();
     // Poll for participants every 10 sec
-    setInterval(pollParticipants, 10000);
+    intervalId = setInterval(pollParticipants, 10000);
   }, 10000);
 }
 
 module.exports = {
   streamScrapping: scrapeStream,
+  intervalId, // Export the interval ID
 };

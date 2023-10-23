@@ -2,6 +2,7 @@ const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
 const logger = require('./logger');
 const streamScrapping = require('./streamScrapping');
+const { intervalId } = require('./streamScrapping');
 
 // const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -142,7 +143,8 @@ async function saveStream(url, username) {
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(iframeContentFrame, datetime);
+  await streamScrapping.streamScrapping(iframeContentFrame, datetime, intervalId);
+
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
@@ -164,6 +166,7 @@ async function saveStream(url, username) {
 
   setTimeout(async () => {
     logger.debug('stream destroyed by timer');
+    clearInterval(intervalId);
     stream.destroy();
   }, 1000 * 300);
 
