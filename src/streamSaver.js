@@ -1,9 +1,11 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
 const logger = require('./logger');
+const streamScrapping = require('./streamScrapping');
 
-const browserPath = '/usr/bin/google-chrome';
+// const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
   headless: false,
@@ -135,13 +137,19 @@ async function saveStream(url, username) {
   await turnOffMicrophone(iframeContentFrame);
   await enterUsername(iframeContentFrame, username);
   await joinTheMeeting(iframeContentFrame);
-  await closeNoCameraNotification(iframeContentFrame);
+  logger.debug('start scrapping');
+  await streamScrapping.streamScrapping(iframeContentFrame);
+  try {
+    await closeNoCameraNotification(iframeContentFrame);
+  } catch (e) {
+    logger.error(e);
+  }
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
   const datetime = Date.now().toString();
-  const saveDirectoryPath = `/home/aleksei/Study/iti0303/saved_video/${datetime}.mp4`;
+  const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
 

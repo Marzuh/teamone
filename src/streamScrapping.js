@@ -1,70 +1,64 @@
-const {launch, getStream} = require("puppeteer-stream");
-const {exec} = require("child_process");
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const logger = require('./logger');
 
-
 const csvFilePath = 'personData.csv';
 const csvWriter = createCsvWriter({
-    path: csvFilePath,
-    append: false, // Append records to an existing file
+  path: csvFilePath,
+  append: false, // Append records to an existing file
+  header: [
+    { id: 'timestamp', title: 'Timestamp' },
+    { id: 'participants', title: 'Participants' },
+  ],
 });
 
+async function scrapeStream(iframeContentFrame) {
+  // Ensure the CSV file has headers
+  await csvWriter.writeRecords([]);
 
-async function scrapeStream() {
-    //MY
-    await csvWriter.writeRecords({
-        timestamp: 'Timestamp',
-        participants: 'Participants',
-        participantsAmount: 'Participants amount',
-    })
+  const participantsButton = '#roster-button';
+  await iframeContentFrame.waitForSelector(participantsButton);
+  await iframeContentFrame.click(participantsButton);
+  logger.debug('click');
 
-    // Wait for the iframe and the button to appear
-    const iframe = await newPage.waitForSelector('iframe');
-    const iframeContentFrame = await iframe.contentFrame();
-    const participantsButton = '#roster-button > div > span';
+  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]');
 
-    await iframeContentFrame.waitForSelector(participantsButton);
+  const pollParticipants = async () => {
+    const currentTimestamp = new Date().toISOString();
+    const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
+    const participantNames = [];
 
-    const participatesAmount = await iframeContentFrame.$eval(participantsButton, (el) => el.textContent);
-    await csvWriter.writeRecords({participantsAmount: participatesAmount})
+    logger.debug('start scrapping participants names');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const participantElement of participants) {
+      // eslint-disable-next-line no-await-in-loop
+      const nameElement = await participantElement.$('span');
+      // eslint-disable-next-line no-await-in-loop
+      const name = await nameElement.evaluate((element) => element.textContent.trim());
+      participantNames.push(name);
+    }
 
+    logger.debug('finish scrapping participants names', participantNames);
 
-    await iframeContentFrame.click('#roster-button');
-    const handleParticipantsList = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]');
-    const pollParticipants = async () => {
+    const data = [
+      {
+        timestamp: currentTimestamp,
+        participants: participantNames.join(', '),
+      },
+    ];
 
-        const currentTimestamp = new Date().toISOString();
-        const participants = await handleParticipantsList.$$('[data-cid="roster-participant"]');
-        const participantNames = [];
+    logger.debug('write data to file');
+    // Write data as an array of records
+    await csvWriter.writeRecords(data);
+  };
 
-        logger.debug("start scrapping participants names")
-        for (const participantElement of participants) {
-            const nameElement = await participantElement.$('span');
-            const name = await nameElement.evaluate((element) => element.textContent.trim());
-            participantNames.push(name);
-        }
-
-        logger.debug("finsh scrapping participants names")
-
-        const data = [
-            {
-                timestamp: currentTimestamp,
-                participants: participantNames.join(', '),
-            },
-        ];
-
-        logger.debug("write data to file")
-        await csvWriter.writeRecords(data);
-    };
-
-    setTimeout(() => {
-        pollParticipants();
-        // Poll for participants every 20 sec
-        setInterval(pollParticipants, 20000);
-    }, 10000);
+  // Set a timeout to run the initial data collection
+  setTimeout(() => {
+    pollParticipants();
+    // Poll for participants every 10 sec
+    setInterval(pollParticipants, 10000);
+  }, 10000);
 }
 
 module.exports = {
-    streamScrapping: scrapeStream
+  streamScrapping: scrapeStream,
 };
