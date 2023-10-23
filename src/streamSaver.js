@@ -133,22 +133,19 @@ async function saveStream(url, username) {
   const iframe = await page.$('iframe');
   const iframeContentFrame = await iframe.contentFrame();
 
+  const datetime = Date.now().toString();
+
   await turnOffCamera(iframeContentFrame);
   await turnOffMicrophone(iframeContentFrame);
   await enterUsername(iframeContentFrame, username);
   await joinTheMeeting(iframeContentFrame);
-  logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(iframeContentFrame);
-  try {
-    await closeNoCameraNotification(iframeContentFrame);
-  } catch (e) {
-    logger.error(e);
-  }
+  // await closeNoCameraNotification(iframeContentFrame);
 
+  logger.debug('start scrapping');
+  await streamScrapping.streamScrapping(iframeContentFrame, datetime);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const datetime = Date.now().toString();
   const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);

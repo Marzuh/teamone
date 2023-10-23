@@ -1,17 +1,21 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const path = require('path');
 const logger = require('./logger');
 
-const csvFilePath = 'personData.csv';
-const csvWriter = createCsvWriter({
-  path: csvFilePath,
-  append: false, // Append records to an existing file
-  header: [
-    { id: 'timestamp', title: 'Timestamp' },
-    { id: 'participants', title: 'Participants' },
-  ],
-});
+async function scrapeStream(iframeContentFrame, datetime) {
+  // eslint-disable-next-line no-template-curly-in-string
+  const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path
+  const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
+  const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
+  const csvWriter = createCsvWriter({
+    path: csvFilePath,
+    append: false, // Append records to an existing file
+    header: [
+      { id: 'timestamp', title: 'Timestamp' },
+      { id: 'participants', title: 'Participants' },
+    ],
+  });
 
-async function scrapeStream(iframeContentFrame) {
   // Ensure the CSV file has headers
   await csvWriter.writeRecords([]);
 
