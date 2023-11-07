@@ -4,7 +4,7 @@ const logger = require('./logger');
 
 async function scrapeStream(iframeContentFrame, datetime) {
   // eslint-disable-next-line no-template-curly-in-string
-  const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
+  const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path
   const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
   const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
   const csvWriter = createCsvWriter({
@@ -30,24 +30,15 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const currentTimestamp = new Date().toISOString();
     const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
     const participantNames = [];
-    const states = await participantsListElement.$$('div.ui-list__itemmedia.ka > div');
-    // const participantStates = [];
 
     logger.debug('start scrapping participants names');
     // eslint-disable-next-line no-restricted-syntax
-    let i = 0;
     for (const participantElement of participants) {
       // eslint-disable-next-line no-await-in-loop
       const nameElement = await participantElement.$('span');
       // eslint-disable-next-line no-await-in-loop
       const name = await nameElement.evaluate((element) => element.textContent.trim());
-      const idElement = await participantElement.$('span[id^="roster-avatar-img-"]');
-      const idAttribute = await idElement.evaluate((element) => element.getAttribute('id'));
-      const id = idAttribute.split(':').pop();
-      const state = states[i];
-      const participantState = await state.evaluate((element) => element.getAttribute('class'));
-      participantNames.push({ name, id, participantState });
-      i++;
+      participantNames.push(name);
     }
 
     logger.debug('finish scrapping participants names', participantNames);
@@ -55,11 +46,12 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const data = [
       {
         timestamp: currentTimestamp,
-        participants: participantNames.map((item) => `${item.name} (${item.id}, ${item.participantState})`).join(', '),
+        participants: participantNames.join(', '),
       },
     ];
 
     logger.debug('write data to file');
+    // Write data as an array of records
     await csvWriter.writeRecords(data);
   };
 

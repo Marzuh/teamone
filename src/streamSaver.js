@@ -146,7 +146,7 @@ async function saveStream(url, username) {
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const saveDirectoryPath = `C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt\\${datetime}.mp4`;
+  const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
 
