@@ -24,29 +24,24 @@ async function scrapeStream(iframeContentFrame, datetime) {
   await iframeContentFrame.click(participantsButton);
   logger.debug('click');
 
-  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]');
-
+  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]')
   const pollParticipants = async () => {
     const currentTimestamp = new Date().toISOString();
     const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
     const participantNames = [];
-    const states = await participantsListElement.$$('div.ui-list__itemmedia.ka > div');
-    // const participantStates = [];
-
     logger.debug('start scrapping participants names');
-    // eslint-disable-next-line no-restricted-syntax
     let i = 0;
     for (const participantElement of participants) {
-      // eslint-disable-next-line no-await-in-loop
       const nameElement = await participantElement.$('span');
-      // eslint-disable-next-line no-await-in-loop
       const name = await nameElement.evaluate((element) => element.textContent.trim());
       const idElement = await participantElement.$('span[id^="roster-avatar-img-"]');
       const idAttribute = await idElement.evaluate((element) => element.getAttribute('id'));
       const id = idAttribute.split(':').pop();
-      const state = states[i];
-      const participantState = await state.evaluate((element) => element.getAttribute('class'));
-      participantNames.push({ name, id, participantState });
+      const stateElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
+      const state = await stateElement.evaluate((element) => element.getAttribute('class'));
+      const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover.___1gzszts.f22iagw svg[data-cid]');
+      const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
+      participantNames.push({ name, id, state, mute });
       i++;
     }
 
@@ -55,7 +50,7 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const data = [
       {
         timestamp: currentTimestamp,
-        participants: participantNames.map((item) => `${item.name} (${item.id}, ${item.participantState})`).join(', '),
+        participants: participantNames.map((item) => `${item.name}, ${item.id}, ${item.state}, ${item.mute}`).join(', '),
       },
     ];
 
