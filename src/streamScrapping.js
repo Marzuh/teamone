@@ -1,7 +1,25 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('./logger');
+const {debug, log} = require("winston");
 
+
+// Finding string of muted user, detecting the unique string of not speaking user
+async function findStringOfNotSpeakingUser(participantsListElement) {
+  let mutedState = null;
+  const randomParticipants = await participantsListElement.$$('[data-cid="roster-participant"]');
+  for (const participantElement of randomParticipants) {
+    const stateElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
+    const state = await stateElement.evaluate((element) => element.getAttribute('class'));
+    const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
+    const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
+    if (mute === 'roster-participant-muted') {
+      mutedState = state;
+      break;
+    }
+  }
+  return mutedState;
+}
 async function scrapeStream(iframeContentFrame, datetime) {
   // eslint-disable-next-line no-template-curly-in-string
   const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
@@ -24,25 +42,26 @@ async function scrapeStream(iframeContentFrame, datetime) {
   await iframeContentFrame.click(participantsButton);
   logger.debug('click');
 
-  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]')
+  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]');
+  const stringOfNotSpeakingUser = await findStringOfNotSpeakingUser(participantsListElement);
   const pollParticipants = async () => {
     const currentTimestamp = new Date().toISOString();
     const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
     const participantNames = [];
     logger.debug('start scrapping participants names');
-    let i = 0;
     for (const participantElement of participants) {
       const nameElement = await participantElement.$('span');
       const name = await nameElement.evaluate((element) => element.textContent.trim());
-      const idElement = await participantElement.$('span[id^="roster-avatar-img-"]');
-      const idAttribute = await idElement.evaluate((element) => element.getAttribute('id'));
-      const id = idAttribute.split(':').pop();
-      const stateElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
-      const state = await stateElement.evaluate((element) => element.getAttribute('class'));
-      const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover.___1gzszts.f22iagw svg[data-cid]');
+      const speakingStringElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
+      let speakingString = await speakingStringElement.evaluate((element) => element.getAttribute('class'));
+      const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
       const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
-      participantNames.push({ name, id, state, mute });
-      i++;
+      if (speakingString.toString() === stringOfNotSpeakingUser) {
+        speakingString = 'not speakingString';
+      } else {
+        speakingString = 'speaking';
+      }
+      participantNames.push({ name, speakingString, mute });
     }
 
     logger.debug('finish scrapping participants names', participantNames);
@@ -50,7 +69,7 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const data = [
       {
         timestamp: currentTimestamp,
-        participants: participantNames.map((item) => `${item.name}, ${item.id}, ${item.state}, ${item.mute}`).join(', '),
+        participants: participantNames.map((item) => `${item.name}, ${item.speakingString}, ${item.mute}`).join(', '),
       },
     ];
 
@@ -65,6 +84,8 @@ async function scrapeStream(iframeContentFrame, datetime) {
     setInterval(pollParticipants, 10000);
   }, 10000);
 }
+
+
 
 module.exports = {
   streamScrapping: scrapeStream,
