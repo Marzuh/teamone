@@ -25,7 +25,9 @@ async function scrapeStream(iframeContentFrame, datetime) {
   const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
   const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
   const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
-  const csvWriter = createCsvWriter({
+  const csvDynamicFileName = `dynamic-data-${datetime}.csv`; // Combine datetime with the filename
+  const csvDynamicFilePath = path.join(directoryPath, csvDynamicFileName); // Combine directory and filename
+  const csvParticipantsWriter = createCsvWriter({
     path: csvFilePath,
     append: false, // Append records to an existing file
     header: [
@@ -34,8 +36,17 @@ async function scrapeStream(iframeContentFrame, datetime) {
     ],
   });
 
+  const csvDynamicWriter = createCsvWriter({
+    path: csvDynamicFilePath,
+    append: false, // Append records to an existing file
+    header: [
+      { id: 'timestamp', title: 'Timestamp' },
+      { id: 'participants', title: 'Participants' },
+    ],
+  });
+
   // Ensure the CSV file has headers
-  await csvWriter.writeRecords([]);
+  await csvParticipantsWriter.writeRecords([]);
 
   const participantsButton = '#roster-button';
   await iframeContentFrame.waitForSelector(participantsButton);
@@ -48,6 +59,7 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const currentTimestamp = new Date().toISOString();
     const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
     const participantNames = [];
+    const dynamicDataList = [];
     logger.debug('start scrapping participants names');
     for (const participantElement of participants) {
       const nameElement = await participantElement.$('span');
@@ -57,24 +69,36 @@ async function scrapeStream(iframeContentFrame, datetime) {
       const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
       const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
       if (speakingString.toString() === stringOfNotSpeakingUser) {
-        speakingString = 'not speakingString';
+        speakingString = 'not speaking';
       } else {
         speakingString = 'speaking';
+        dynamicDataList.push(name);
       }
       participantNames.push({ name, speakingString, mute });
     }
 
     logger.debug('finish scrapping participants names', participantNames);
 
-    const data = [
+    const participantsData = [
       {
         timestamp: currentTimestamp,
         participants: participantNames.map((item) => `${item.name}, ${item.speakingString}, ${item.mute}`).join(', '),
       },
     ];
+    await csvParticipantsWriter.writeRecords(participantsData);
 
-    logger.debug('write data to file');
-    await csvWriter.writeRecords(data);
+    if (dynamicDataList.length > 0) {
+      const participantsString = dynamicDataList.join(', ');
+      const dynamicData = [
+        {
+          timestamp: currentTimestamp,
+          participants: `${participantsString} ${dynamicDataList.length > 1 ? 'are speaking' : 'is speaking'}`,
+        },
+      ];
+
+      logger.debug('write data to file');
+      await csvDynamicWriter.writeRecords(dynamicData);
+    }
   };
 
   // Set a timeout to run the initial data collection
