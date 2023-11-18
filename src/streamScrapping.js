@@ -2,16 +2,16 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('./logger');
 
-async function scrapeStream(iframeContentFrame, datetime) {
-  // eslint-disable-next-line no-template-curly-in-string
-  const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path
+async function startScrapping(iframeContentFrame, datetime) {
+  // const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path
+  const directoryPath = '/home/aleksei/Study/iti0303/saved_video/'; // Update the directory path
   const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
   const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
   const csvWriter = createCsvWriter({
     path: csvFilePath,
     append: false, // Append records to an existing file
     header: [
-      { id: 'timestamp', title: 'Timestamp' },
+      { id: 'timestamp', title: 'Timestamp (UTC)' },
       { id: 'participants', title: 'Participants' },
     ],
   });
@@ -46,7 +46,7 @@ async function scrapeStream(iframeContentFrame, datetime) {
     const data = [
       {
         timestamp: currentTimestamp,
-        participants: participantNames.join(', '),
+        participants: participantNames,
       },
     ];
 
@@ -54,15 +54,13 @@ async function scrapeStream(iframeContentFrame, datetime) {
     // Write data as an array of records
     await csvWriter.writeRecords(data);
   };
+  return setInterval(pollParticipants, 10000);
+}
 
-  // Set a timeout to run the initial data collection
-  setTimeout(() => {
-    pollParticipants();
-    // Poll for participants every 10 sec
-    setInterval(pollParticipants, 10000);
-  }, 10000);
+function stopScrapping(intervalId) {
+  clearInterval(intervalId);
 }
 
 module.exports = {
-  streamScrapping: scrapeStream,
+  streamScrapping: startScrapping, stopScrapping,
 };

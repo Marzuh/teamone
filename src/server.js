@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser'); // For parsing form data
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const schedule = require('node-schedule');
 const logger = require('./logger');
 const streamSaver = require('./streamSaver');
 
@@ -60,3 +61,21 @@ app.post('/save', (req, res) => {
 app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);
 });
+
+function saveScheduledMeeting() {
+  const meetingScheduledDate = new Date(2023, 9, 24, 18, 0);
+  // const meetingScheduledDate = new Date(2023, 9, 24, 11, 34);
+  const meetingMaxDuration = 1000 * 60 * 60 * 1.5; // 1.5h
+  // const meetingMaxDuration = 1000 * 10; // 1.5h
+  const meetingUrl = 'https://teams.microsoft.com/l/meetup-join/19%3ameeting_NDNjMjNiMzMtZDMyNC00NzlmLTk2YmYtZmMyZmE2M2U1Mjli%40thread.v2/0?context=%7b%22Tid%22%3a%226c425ff2-6865-42df-a4db-8e6af634813d%22%2c%22Oid%22%3a%22658d47be-797d-4560-ac33-ab600597ebf8%22%7d';
+  const username = 'Aleksei Sohh';
+  // eslint-disable-next-line max-len
+  schedule.scheduleJob(meetingScheduledDate, () => {
+    logger.debug(`Job added at ${meetingScheduledDate}`);
+    streamSaver.saveStream(meetingUrl, username, meetingMaxDuration).then(
+      logger.debug('Teams meeting finished correctly.'),
+    );
+  });
+}
+
+saveScheduledMeeting();
