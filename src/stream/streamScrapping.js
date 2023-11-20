@@ -1,6 +1,6 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
-const logger = require('./logger');
+const logger = require('../logger');
 
 async function startScrapping(iframeContentFrame, datetime) {
   // const directoryPath = 'C:/Users/narti/studies/iti0303/'; // Update the directory path

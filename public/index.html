@@ -30,7 +30,7 @@
 
         .form-container input[type="text"],
         .form-container input[type="datetime-local"],
-        .form-container input[type="password"],
+        .form-container input[type="duration"],
         .form-container button {
             width: 90%;
             padding: 10px;
@@ -45,22 +45,47 @@
             cursor: pointer;
         }
     </style>
+    <script>
+        function submitForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const url = form.url.value;
+            const startTime = new Date(form.startTime.value).toISOString();
+            const duration = form.duration.value;
+            const username = form.username.value;
+
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url, startTime, duration, username }),
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
 </head>
 <body>
 <div class="form-container">
     <h2 style="color: white;">Stream Saving Form</h2>
-    <form action="/save" method="post">
+    <form onsubmit="submitForm(event)">
         <label for="url">Web Page Link:</label>
         <input type="text" id="url" name="url" required>
 
-        <label for="startTime">Start Time:</label>
-        <input type="datetime-local" id="startTime" name="startTime">
+        <label for="startTime">Start Time (Local Timezone):</label>
+        <input type="datetime-local" id="startTime" name="startTime" required>
+
+        <label for="duration">Duration (minutes):</label>
+        <input type="number" id="duration" name="duration" min="1" required>
 
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username">
-
-        <label for="password">Password:</label>
-        <input type="text" id="password" name="password">
+        <input type="text" id="username" name="username" required>
 
         <button type="submit">Start</button>
     </form>

@@ -1,8 +1,8 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
-const logger = require('./logger');
+const logger = require('../logger');
 const streamScrapping = require('./streamScrapping');
-const {stopScrapping} = require("./streamScrapping");
+const { stopScrapping } = require('./streamScrapping');
 
 const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -105,14 +105,6 @@ async function setupPageViewport(page) {
     width: screenResolution.width,
     height: screenResolution.height,
   });
-}
-
-async function closeNoCameraNotification(iframeContentFrame) {
-  const closeNotificationButton = 'button#close_button';
-  logger.debug(`Waiting for "${closeNotificationButton}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(closeNotificationButton, { timeout: timeoutDuration });
-  logger.debug(`Selector "${closeNotificationButton}" found in the iframe content frame.`);
-  await iframeContentFrame.click(closeNotificationButton);
 }
 
 async function saveStream(url, username, maxDuration) {
