@@ -4,7 +4,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const { scheduleTasksFilePath } = require('../constants');
 const logger = require('../logger');
 const { port } = require('../constants');
-const { saveScheduledMeeting } = require('../scheduler/scheduler');
+const { safeSaveScheduledMeeting } = require('../scheduler/scheduler');
 
 const app = express();
 
@@ -21,6 +21,7 @@ const csvWriter = createCsvWriter({
     { id: 'startTime', title: 'startTime' },
     { id: 'username', title: 'username' },
     { id: 'duration', title: 'duration' },
+    { id: 'status', title: 'status' },
   ],
   append: true,
 });
@@ -30,9 +31,10 @@ app.post('/save', (req, res) => {
     url, startTime, username, duration,
   } = req.body;
 
+  const status = 'waiting';
   const id = Date.now();
   const data = {
-    id, url, startTime, username, duration,
+    id, url, startTime, username, duration, status,
   };
   logger.debug('New task with data: %s', data);
 
@@ -45,7 +47,7 @@ app.post('/save', (req, res) => {
       res.status(500).send('Error while saving data.');
     });
 
-  saveScheduledMeeting(url, startTime, username, duration);
+  safeSaveScheduledMeeting(url, startTime, username, duration);
   res.send('Your request has been accepted for processing');
 });
 

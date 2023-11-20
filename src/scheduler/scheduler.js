@@ -16,13 +16,30 @@ function saveScheduledMeeting(url, startTime, username, duration) {
   });
 }
 
+function isDateNotInPast(startTimeString) {
+  const startTime = new Date(startTimeString);
+  const currentTime = new Date();
+
+  return startTime >= currentTime;
+}
+
+function safeSaveScheduledMeeting(url, startTime, username, duration) {
+  if (isDateNotInPast(startTime)) {
+    saveScheduledMeeting(url, startTime, username, duration);
+  } else {
+    logger.info(`Task for user ${username} scheduled at ${startTime} can not be saved, because it in past`);
+  }
+}
+
 function readAndScheduleMeetings(csvFilePath) {
   let rowCounter = 0;
   fs.createReadStream(csvFilePath)
     .pipe(csvParser())
     .on('data', (row) => {
       rowCounter += 1;
-      saveScheduledMeeting(row.url, new Date(row.startTime), row.username);
+      if (row.status === 'waiting') {
+        safeSaveScheduledMeeting(row.url, new Date(row.startTime), row.username, row.duration);
+      }
     })
     .on('end', () => {
       logger.info(`CSV file processing completed. ${rowCounter} tasks was added to queue.`);
@@ -38,7 +55,7 @@ async function checkAndProcessCsv() {
     readAndScheduleMeetings(csvFilePath);
   } catch (err) {
     logger.info(`${scheduleTasksFilePath} does not exist. Create new file with headers. No task were added.`);
-    const data = 'id,url,startTime,username,duration';
+    const data = 'id,url,startTime,username,duration,status\n';
     await fs.promises.writeFile(csvFilePath, data, 'utf8');
   }
 }
@@ -47,4 +64,4 @@ function initScheduler() {
   checkAndProcessCsv();
 }
 
-module.exports = { initScheduler, saveScheduledMeeting };
+module.exports = { initScheduler, safeSaveScheduledMeeting };
