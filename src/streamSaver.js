@@ -1,7 +1,9 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
+const fs = require('fs');
 const logger = require('./logger');
 const streamScrapping = require('./streamScrapping');
+const path = require('path');
 
 // const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -114,7 +116,7 @@ async function closeNoCameraNotification(iframeContentFrame) {
   await iframeContentFrame.click(closeNotificationButton);
 }
 
-async function saveStream(url, username) {
+async function saveStream(url, username, saveDirectory) {
   const browser = await launch(browserAgs);
   const context = browser.defaultBrowserContext();
   await context.clearPermissionOverrides();
@@ -135,6 +137,11 @@ async function saveStream(url, username) {
 
   const datetime = Date.now().toString();
 
+  const newFolderPath = path.join(saveDirectory, datetime);
+  if (!fs.existsSync(newFolderPath)) {
+    fs.mkdirSync(newFolderPath, { recursive: true });
+  }
+
   await turnOffCamera(iframeContentFrame);
   await turnOffMicrophone(iframeContentFrame);
   await enterUsername(iframeContentFrame, username);
@@ -142,11 +149,11 @@ async function saveStream(url, username) {
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(iframeContentFrame, datetime);
+  await streamScrapping.streamScrapping(iframeContentFrame, datetime, newFolderPath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const saveDirectoryPath = `C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt\\${datetime}.mp4`;
+  const saveDirectoryPath = `${newFolderPath}\\'stream'.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
 

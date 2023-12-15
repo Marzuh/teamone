@@ -6,6 +6,8 @@ const streamSaver = require('./streamSaver');
 
 const app = express();
 const port = process.env.PORT || 3000;
+// Include the function from streamScrapping.js
+const { handleStop } = require('./streamScrapping');
 
 app.use(bodyParser.urlencoded({ extended: false })); // Parse form data
 
@@ -20,9 +22,8 @@ const csvWriter = createCsvWriter({
   header: [
     { id: 'id', title: 'ID' },
     { id: 'url', title: 'URL' },
-    { id: 'startTime', title: 'startTime' },
+    { id: 'saveDirectory', title: 'saveDirectory' },
     { id: 'username', title: 'username' },
-    { id: 'password', title: 'password' },
   ],
   append: true, // Append records to an existing file
 });
@@ -30,7 +31,7 @@ const csvWriter = createCsvWriter({
 // POST route for processing the form and calling the 'saveStream' method
 app.post('/save', (req, res) => {
   const {
-    url, startTime, username, password,
+    url, saveDirectory, username,
   } = req.body;
 
   // Generate a unique identifier (e.g., timestamp)
@@ -38,7 +39,7 @@ app.post('/save', (req, res) => {
 
   // Create a data object for writing to the CSV
   const data = {
-    id, url, startTime, username, password,
+    id, url, saveDirectory, username,
   };
   logger.debug('New task with data: %s', data);
 
@@ -53,9 +54,17 @@ app.post('/save', (req, res) => {
     });
 
   // Call the 'saveStream' method from streamSaver.js with the URL for recording
-  streamSaver.saveStream(url, username);
-  res.send('Your request has been accepted for processing');
+  streamSaver.saveStream(url, username, saveDirectory);
+  res.redirect('/stop');
 });
+
+app.get('/stop', (req, res) => {
+  // Serve the stop.html page
+  res.sendFile('stop.html', { root: './public' });
+});
+// Handle stop request
+app.post('/stop', (req, res) => {
+  handleStop()})
 
 app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);

@@ -2,7 +2,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('./logger');
 const {debug, log} = require("winston");
-const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
+let directoryPath; // Update the directory path
 const fs = require('fs');
 
 
@@ -25,11 +25,12 @@ async function findStringOfNotSpeakingUser(participantsListElement) {
 }
 
 const allSpeakingUsers = [];
-async function scrapeStream(iframeContentFrame, datetime) {
+async function scrapeStream(iframeContentFrame, datetime, newFolderPath) {
+  directoryPath = newFolderPath;
   // eslint-disable-next-line no-template-curly-in-string
-  const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
+  const csvFileName = `meeting-data.csv`; // Combine datetime with the filename
   const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
-  const csvDynamicFileName = `dynamic-data-${datetime}.csv`; // Combine datetime with the filename
+  const csvDynamicFileName = `dynamic-data.csv`; // Combine datetime with the filename
   const csvDynamicFilePath = path.join(directoryPath, csvDynamicFileName); // Combine directory and filename
   const csvParticipantsWriter = createCsvWriter({
     path: csvFilePath,
@@ -153,7 +154,7 @@ function handleStop() {
   }
   const csvData = lines.join('\n');
   logger.debug(csvData);
-  const filePath = path.join(directoryPath, `output_data-${Date.now()}.csv`);
+  const filePath = path.join(directoryPath, `output_data.csv`);
   fs.writeFileSync(filePath, csvData);
 
   // Exit the Node.js process

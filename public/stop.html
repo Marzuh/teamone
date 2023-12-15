@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stop Streaming</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <h1>Stop Streaming</h1>
+  <p>If you push the "Stop" button, the streaming and scraping will be stopped.</p>
+  <form class="form-container" id="stopForm" action="/stop" method="post">
+    <button type="submit">Stop</button>
+  </form>
+  <div class="additional-info-section">
+    <h2>Instructions</h2>
+    <p>After stopping the streaming, you can find a new folder with the following files in your directory:</p>
+    <ul>
+      <li>output-data.csv</li>
+      <li>meeting-data.csv</li>
+      <li>dynamic-data.csv</li>
+      <li>mp4 file with stream</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
