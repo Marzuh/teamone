@@ -3,6 +3,7 @@ const path = require('path');
 const logger = require('./logger');
 const {debug, log} = require("winston");
 const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
+const fs = require('fs');
 
 
 
@@ -26,7 +27,6 @@ async function findStringOfNotSpeakingUser(participantsListElement) {
 const allSpeakingUsers = [];
 async function scrapeStream(iframeContentFrame, datetime) {
   // eslint-disable-next-line no-template-curly-in-string
-  const directoryPath = 'C:\\Users\\volos\\OneDrive\\Документы\\TellimusProjekt'; // Update the directory path
   const csvFileName = `meeting-data-${datetime}.csv`; // Combine datetime with the filename
   const csvFilePath = path.join(directoryPath, csvFileName); // Combine directory and filename
   const csvDynamicFileName = `dynamic-data-${datetime}.csv`; // Combine datetime with the filename
@@ -84,7 +84,7 @@ async function scrapeStream(iframeContentFrame, datetime) {
         participantNames.push({ name, speakingString, mute });
       } catch (error) {
         // Handle the error (e.g., log it or ignore it)
-        console.error('Error processing participant:', error.message);
+        logger.debug('Error processing participant:', error.message);
       }
     }
 
@@ -125,65 +125,43 @@ async function scrapeStream(iframeContentFrame, datetime) {
 }
 
 function handleStop() {
-  console.log(allSpeakingUsers);
-  let newUserCountMap = {};
-  let isLastIteration = false;
+  logger.debug(allSpeakingUsers);
+  const newUserCountMap = {};
   const lines = [];
-  const fs = require('fs');
-  const path = require('path');
-
-
-  // const csvFileName2 = 'test-data.csv'; // Combine datetime with the filename
-  // const csvFilePath2 = path.join(directoryPath, csvFileName2); // Combine directory and filename
-  //
-  //
-  // const csvMapWriter = createCsvWriter({
-  //   path: csvFilePath2,
-  //   append: false, // Append records to an existing file
-  //   header: [
-  //     { id: 'line', title: 'Line' },
-  //   ],
-  // });
 
   for (const [index, userList] of allSpeakingUsers.entries()) {
+    // Count users' speaking time
     for (const userName of userList) {
-      if (newUserCountMap[userName]) {
-        newUserCountMap[userName]+=2;
-      } else {
-        newUserCountMap[userName] = 2;
-      }
+      newUserCountMap[userName] = (newUserCountMap[userName] || 0) + 2;
     }
 
-    isLastIteration = index === allSpeakingUsers.length - 1;
+    // Check if it's the last iteration
+    const isLastIteration = index === allSpeakingUsers.length - 1;
 
-    // Сохраняем удаленных пользователей в файл и удаляем их из мапа
+    // Process speaking time and generate lines
     for (const [userName, count] of Object.entries(newUserCountMap)) {
-      if (!userList.includes(userName) || isLastIteration) {
+      const userIsNotInCurrentList = !userList.includes(userName);
+
+      if (userIsNotInCurrentList || isLastIteration) {
         if (count > 2) {
-          const line = `${userName} - ${count - 2} sek ->`;
+          const line = `${userName} - ${count} sek ->`;
           lines.push(line);
-          // Use csv-writer to write records to the CSV file
         }
         delete newUserCountMap[userName];
       }
     }
   }
   const csvData = lines.join('\n');
-  console.log(csvData);
-  if (!fs.existsSync(directoryPath)) {
-    fs.mkdirSync(directoryPath, { recursive: true });
-  }
+  logger.debug(csvData);
+  const filePath = path.join(directoryPath, `output_data-${Date.now()}.csv`);
+  fs.writeFileSync(filePath, csvData);
 
-  const filePath = path.join(directoryPath, 'output_data.csv');
-
-  fs.writeFileSync(filePath, lines.join('\n'));
-  process.exit(); // This exits the Node.js process
+  // Exit the Node.js process
+  process.exit();
 }
-
 // Register the handleStop function for the SIGINT signal
 process.on('SIGINT', handleStop);
-
-
 module.exports = {
   streamScrapping: scrapeStream,
+  handleStop,
 };
