@@ -1,9 +1,12 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
-const logger = require('./logger');
+const logger = require('../logger');
+const streamScrapping = require('./streamScrapping');
+const { stopScrapping } = require('./streamScrapping');
 
 const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
   headless: false,
@@ -104,15 +107,7 @@ async function setupPageViewport(page) {
   });
 }
 
-async function closeNoCameraNotification(iframeContentFrame) {
-  const closeNotificationButton = 'button#close_button';
-  logger.debug(`Waiting for "${closeNotificationButton}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(closeNotificationButton, { timeout: timeoutDuration });
-  logger.debug(`Selector "${closeNotificationButton}" found in the iframe content frame.`);
-  await iframeContentFrame.click(closeNotificationButton);
-}
-
-async function saveStream(url, username) {
+async function saveStream(url, username, maxDuration) {
   const browser = await launch(browserAgs);
   const context = browser.defaultBrowserContext();
   await context.clearPermissionOverrides();
@@ -131,17 +126,22 @@ async function saveStream(url, username) {
   const iframe = await page.$('iframe');
   const iframeContentFrame = await iframe.contentFrame();
 
+  const datetime = Date.now().toString();
+
   await turnOffCamera(iframeContentFrame);
   await turnOffMicrophone(iframeContentFrame);
   await enterUsername(iframeContentFrame, username);
   await joinTheMeeting(iframeContentFrame);
-  await closeNoCameraNotification(iframeContentFrame);
+  // await closeNoCameraNotification(iframeContentFrame);
+
+  logger.debug('start scrapping');
+  const scrapperIntervalId = streamScrapping.streamScrapping(iframeContentFrame, datetime);
 
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const datetime = Date.now().toString();
   const saveDirectoryPath = `/home/aleksei/Study/iti0303/saved_video/${datetime}.mp4`;
+  // const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
 
@@ -153,6 +153,8 @@ async function saveStream(url, username) {
   stream.on('close', () => {
     logger.debug('stream close event occurs');
     ffmpeg.stdin.end();
+    stopScrapping(scrapperIntervalId);
+    browser.close();
   });
 
   stream.pipe(ffmpeg.stdin);
@@ -160,7 +162,7 @@ async function saveStream(url, username) {
   setTimeout(async () => {
     logger.debug('stream destroyed by timer');
     stream.destroy();
-  }, 1000 * 300);
+  }, maxDuration);
 
   // TODO: revert comment. right now it broke stream closing and media saving
   // await browser.close();
