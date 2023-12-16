@@ -63,8 +63,9 @@ app.get('/stop', (req, res) => {
   res.sendFile('stop.html', { root: './public' });
 });
 // Handle stop request
-app.post('/stop', (req, res) => {
-  handleStop()})
+app.post('/stop', () => {
+  handleStop();
+});
 
 app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);

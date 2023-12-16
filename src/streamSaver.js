@@ -1,23 +1,24 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 const logger = require('./logger');
 const streamScrapping = require('./streamScrapping');
-const path = require('path');
 
-// const browserPath = '/usr/bin/google-chrome';
+const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
-const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
   headless: false,
   executablePath: browserPath,
   timeout: 0,
   ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
-  args: ['--start-fullscreen'],
+  args: ['--start-maximized'],
+  // args: ['--start-fullscreen'],
 };
 //   args: ['--start-maximized'] use this args for default browser view
-const timeoutDuration = 0;
+const timeoutDuration = 10000;
 
 async function chooseMeetingInBrowser(page) {
   try {
@@ -130,10 +131,10 @@ async function saveStream(url, username, saveDirectory) {
   await page.goto(url, { timeout: timeoutDuration });
 
   await chooseMeetingInBrowser(page);
-
-  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/_#/modern-calling/', { timeout: timeoutDuration });
-  const iframe = await page.$('iframe');
-  const iframeContentFrame = await iframe.contentFrame();
+  logger.debug(1);
+  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/v2/?meetingjoin=true', { timeout: timeoutDuration });
+  // const iframe = await page.$('iframe');
+  // const iframeContentFrame = await iframe.contentFrame();
 
   const datetime = Date.now().toString();
 
@@ -142,18 +143,18 @@ async function saveStream(url, username, saveDirectory) {
     fs.mkdirSync(newFolderPath, { recursive: true });
   }
 
-  await turnOffCamera(iframeContentFrame);
-  await turnOffMicrophone(iframeContentFrame);
-  await enterUsername(iframeContentFrame, username);
-  await joinTheMeeting(iframeContentFrame);
+  await turnOffCamera(page);
+  await turnOffMicrophone(page);
+  await enterUsername(page, username);
+  await joinTheMeeting(page);
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(iframeContentFrame, datetime, newFolderPath);
+  await streamScrapping.streamScrapping(page, datetime, newFolderPath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const saveDirectoryPath = `${newFolderPath}\\'stream'.mp4`;
+  const saveDirectoryPath = `${newFolderPath}\\stream.mp4`;
 
   logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
 
