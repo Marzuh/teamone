@@ -9,7 +9,7 @@ const streamSaver = require('../stream/streamSaver');
 
 function saveScheduledMeeting(url, startTime, username, duration) {
   logger.info(`Added new task for user ${username} at ${startTime}`);
-  const maxDuration = duration || 1000 * 60 * 60 * 1.5;
+  const maxDuration = duration * 60 * 1000 || 1000 * 60 * 60 * 1.5;
   schedule.scheduleJob(startTime, () => {
     logger.info(`Starting scheduled meeting for ${username}`);
     streamSaver.saveStream(url, username, maxDuration);

@@ -1,5 +1,7 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 const logger = require('../logger');
 const streamScrapping = require('./streamScrapping');
 const { stopScrapping } = require('./streamScrapping');
@@ -107,6 +109,15 @@ async function setupPageViewport(page) {
   });
 }
 
+function createDirectorySync(directoryPath) {
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+    logger.debug(`Directory created: ${directoryPath}`);
+  } else {
+    logger.debug(`Directory already exists: ${directoryPath}`);
+  }
+}
+
 async function saveStream(url, username, maxDuration) {
   const browser = await launch(browserAgs);
   const context = browser.defaultBrowserContext();
@@ -122,32 +133,38 @@ async function saveStream(url, username, maxDuration) {
 
   await chooseMeetingInBrowser(page);
 
-  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/_#/modern-calling/', { timeout: timeoutDuration });
-  const iframe = await page.$('iframe');
-  const iframeContentFrame = await iframe.contentFrame();
+  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/v2/?meetingjoin=true', { timeout: timeoutDuration });
 
   const datetime = Date.now().toString();
 
-  await turnOffCamera(iframeContentFrame);
-  await turnOffMicrophone(iframeContentFrame);
-  await enterUsername(iframeContentFrame, username);
-  await joinTheMeeting(iframeContentFrame);
+  await turnOffCamera(page);
+  await turnOffMicrophone(page);
+  await enterUsername(page, username);
+  await joinTheMeeting(page);
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  const scrapperIntervalId = streamScrapping.streamScrapping(iframeContentFrame, datetime);
-
+  const saveDirAbsolutePath = path.resolve('meeting_data', datetime);
+  logger.warn('save path', saveDirAbsolutePath);
+  createDirectorySync(saveDirAbsolutePath);
+  const fileName = path.join(saveDirAbsolutePath, 'meeting.mp4');
+  logger.warn('file: ', fileName);
+  const scrapperIntervalId = streamScrapping.streamScrapping(page, datetime, saveDirAbsolutePath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const saveDirectoryPath = `/home/aleksei/Study/iti0303/saved_video/${datetime}.mp4`;
-  // const saveDirectoryPath = `C:\\Users\\narti\\studies\\iti0303\\${datetime}.mp4`;
 
-  logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
+  logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, fileName);
 
-  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${saveDirectoryPath}`);
+  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${fileName}`);
+
   ffmpeg.stderr.on('data', (chunk) => {
     logger.debug('stream data event occurs. Chunk: %s', chunk.toString());
+  });
+
+  stream.on('error', (error) => {
+    logger.debug('Stream error:', error);
+    ffmpeg.stdin.end();
   });
 
   stream.on('close', () => {
