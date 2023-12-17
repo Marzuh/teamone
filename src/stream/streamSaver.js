@@ -150,7 +150,7 @@ async function saveStream(url, username, maxDuration) {
   createDirectorySync(saveDirAbsolutePath);
   const fileName = path.join(saveDirAbsolutePath, 'meeting.mp4');
   logger.warn('file: ', fileName);
-  await streamScrapping.streamScrapping(page, datetime, saveDirAbsolutePath);
+  const scrapperIntervalId = streamScrapping.streamScrapping(page, datetime, saveDirAbsolutePath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
