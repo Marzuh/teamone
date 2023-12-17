@@ -2,6 +2,8 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('../logger');
 
+let intervalId;
+
 let directoryPath;
 const fs = require('fs');
 // List to hold all the lists of participants who spoke every 2 seconds
@@ -119,8 +121,13 @@ async function startScrapping(page, datetime, saveDirAbsolutePath) {
   setTimeout(() => {
     pollParticipants();
     // Poll for participants every 2 sec
-    setInterval(pollParticipants, 2000);
+    intervalId = setInterval(pollParticipants, 2000);
   }, 2000);
+}
+
+function stopScrapping(intervalId) {
+  clearInterval(intervalId);
+  handleStop();
 }
 
 function handleStop() {
@@ -155,13 +162,9 @@ function handleStop() {
   logger.debug(eachSpeakingParticipantTime);
   const speakingParticipantsPath = path.join(directoryPath, 'output_data.csv');
   fs.writeFileSync(speakingParticipantsPath, eachSpeakingParticipantTime);
-
-  // Exit the Node.js process
-  process.exit();
 }
 // Register the handleStop function for the SIGINT signal
 process.on('SIGINT', handleStop);
 module.exports = {
-  streamScrapping: startScrapping,
-  handleStop,
+  streamScrapping: startScrapping, stopScrapping,
 };
