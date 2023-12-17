@@ -132,8 +132,6 @@ async function saveStream(url, username, saveDirectory) {
   await chooseMeetingInBrowser(page);
 
   await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/v2/?meetingjoin=true', { timeout: timeoutDuration });
-  //const iframe = await page.$('iframe');
-  //const iframeContentFrame = await iframe.contentFrame();
 
   const datetime = Date.now().toString();
 
