@@ -1,6 +1,7 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const logger = require('../logger');
+
 let directoryPath;
 const fs = require('fs');
 // List to hold all the lists of participants who spoke every 2 seconds
@@ -8,12 +9,11 @@ const listOfDynamicLists = [];
 
 const SELECTOR_WAITING_TIMEOUT = 65000;
 
-
 // Finding string of muted user, detecting the unique string of not speaking user
 async function findStringOfNotSpeakingUser(listOfParticipants) {
   let mutedState = null;
   for (const participantElement of listOfParticipants) {
-    const classAttribute = await participantElement.$eval('.ui-list__itemmedia', element => element.outerHTML);
+    const classAttribute = await participantElement.$eval('.ui-list__itemmedia', (element) => element.outerHTML);
     const matches = classAttribute.match(/class="(.*?)"/g);
     const state = matches && matches.length >= 2 ? matches[1].replace('class="', '').replace('"', '') : null;
     const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
@@ -26,10 +26,9 @@ async function findStringOfNotSpeakingUser(listOfParticipants) {
   return mutedState;
 }
 
-async function startScrapping(page, datetime, newFolderPath) {
-  directoryPath = newFolderPath;
-  const meetingDataFile = `meeting-data.csv`;
-  const meetingDataPath = path.join(directoryPath, meetingDataFile);
+async function startScrapping(page, datetime, saveDirAbsolutePath) {
+  directoryPath = saveDirAbsolutePath;
+  const meetingDataPath = path.join(directoryPath, 'meeting-info.csv');
   const meetingDataWriter = createCsvWriter({
     path: meetingDataPath,
     append: false, // Append records to an existing file
@@ -39,7 +38,7 @@ async function startScrapping(page, datetime, newFolderPath) {
     ],
   });
 
-  const dynamicFileName = `dynamic-data.csv`;
+  const dynamicFileName = 'dynamic-data.csv';
   const dynamicFilePath = path.join(directoryPath, dynamicFileName);
   const dynamicFileWriter = createCsvWriter({
     path: dynamicFilePath,
@@ -68,8 +67,8 @@ async function startScrapping(page, datetime, newFolderPath) {
     logger.debug('Start scrapping participants data ...');
     for (const participantElement of listOfParticipants) {
       try {
-        const name = await participantElement.$eval('.fui-StyledText', span => span.getAttribute('title'));
-        const classAttribute = await participantElement.$eval('.ui-list__itemmedia', element => element.outerHTML);
+        const name = await participantElement.$eval('.fui-StyledText', (span) => span.getAttribute('title'));
+        const classAttribute = await participantElement.$eval('.ui-list__itemmedia', (element) => element.outerHTML);
         const matches = classAttribute.match(/class="(.*?)"/g);
         let speakingString = matches && matches.length >= 2 ? matches[1].replace('class="', '').replace('"', '') : null;
         const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
@@ -154,7 +153,7 @@ function handleStop() {
   }
   const eachSpeakingParticipantTime = participantsSpeakingTimes.join('\n');
   logger.debug(eachSpeakingParticipantTime);
-  const speakingParticipantsPath = path.join(directoryPath, `output_data.csv`);
+  const speakingParticipantsPath = path.join(directoryPath, 'output_data.csv');
   fs.writeFileSync(speakingParticipantsPath, eachSpeakingParticipantTime);
 
   // Exit the Node.js process
@@ -163,6 +162,6 @@ function handleStop() {
 // Register the handleStop function for the SIGINT signal
 process.on('SIGINT', handleStop);
 module.exports = {
-  streamScrapping: scrapeStream,
+  streamScrapping: startScrapping(),
   handleStop,
 };

@@ -6,8 +6,8 @@ const logger = require('../logger');
 const streamScrapping = require('./streamScrapping');
 const { stopScrapping } = require('./streamScrapping');
 
-const browserPath = '/usr/bin/google-chrome';
-// const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+//const browserPath = '/usr/bin/google-chrome';
+const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
 // const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
