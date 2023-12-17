@@ -29,7 +29,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "dev": "node src/server/server.js",
+    "dev": "node src/app.js",
     "clinic": "clinic doctor -- node src/server/server.js"
   }
 }
