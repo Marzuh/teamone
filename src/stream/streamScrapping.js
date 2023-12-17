@@ -95,7 +95,7 @@ async function startScrapping(page, datetime, saveDirAbsolutePath) {
     const participantsData = [
       {
         timestamp: currentTimestamp,
-        participants: participantsDataList.map((item) => `${item.name}, ${item.speakingString}, ${item.muteState}`).join(', '),
+        participants: participantsDataList.map((item) => `${item.name}`).join('; '),
       },
     ];
     logger.debug('Writing meeting data into file ...');
@@ -126,7 +126,8 @@ async function startScrapping(page, datetime, saveDirAbsolutePath) {
 function handleStop() {
   logger.debug(listOfDynamicLists);
   const newUserCountMap = {};
-  const participantsSpeakingTimes = [];
+  const participantsSpeakingTimes = ['UserName','SpeakingTime'];
+
 
   for (const [index, participantList] of listOfDynamicLists.entries()) {
     // Count participants' speaking time

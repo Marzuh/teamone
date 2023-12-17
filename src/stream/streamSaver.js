@@ -5,10 +5,11 @@ const fs = require('fs');
 const logger = require('../logger');
 const streamScrapping = require('./streamScrapping');
 const { stopScrapping } = require('./streamScrapping');
+const { processDataStart } = require('../analytics/processData');
 
-//const browserPath = '/usr/bin/google-chrome';
-const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
-// const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = '/usr/bin/google-chrome';
+// const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
+const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
   headless: false,
@@ -172,6 +173,7 @@ async function saveStream(url, username, maxDuration) {
     logger.debug('stream close event occurs');
     // await ffmpeg.stdin.end();
     stopScrapping(scrapperIntervalId);
+    processDataStart(datetime, saveDirAbsolutePath);
     await browser.close();
   });
 
