@@ -167,17 +167,18 @@ async function saveStream(url, username, maxDuration) {
     ffmpeg.stdin.end();
   });
 
-  stream.on('close', () => {
+  stream.on('close', async () => {
     logger.debug('stream close event occurs');
-    ffmpeg.stdin.end();
+    // await ffmpeg.stdin.end();
     stopScrapping(scrapperIntervalId);
-    browser.close();
+    await browser.close();
   });
 
   stream.pipe(ffmpeg.stdin);
 
   setTimeout(async () => {
     logger.debug('stream destroyed by timer');
+    await ffmpeg.stdin.end();
     stream.destroy();
   }, maxDuration);
 
