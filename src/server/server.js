@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser'); // For parsing form data
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const path = require('path');
 const { scheduleTasksFilePath } = require('../constants');
 const logger = require('../logger');
 const { port } = require('../constants');
@@ -13,8 +14,10 @@ app.use(bodyParser.urlencoded({ extended: false })); // Parse form data
 app.use(express.static('public'));
 app.use(express.json());
 
+const scheduledTaskFilePath = path.resolve(scheduleTasksFilePath);
+
 const csvWriter = createCsvWriter({
-  path: `./src/scheduler/${scheduleTasksFilePath}`,
+  path: scheduledTaskFilePath,
   header: [
     { id: 'id', title: 'id' },
     { id: 'url', title: 'url' },
@@ -49,6 +52,10 @@ app.post('/save', (req, res) => {
 
   safeSaveScheduledMeeting(url, startTime, username, duration);
   res.send('Your request has been accepted for processing');
+});
+
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: '../public' });
 });
 
 function startServer() {
