@@ -127,10 +127,10 @@ async function startScrapping(page, datetime, saveDirAbsolutePath) {
 
 function stopScrapping(intervalId) {
   clearInterval(intervalId);
-  handleStop();
+  activeUsersProcessing();
 }
 
-function handleStop() {
+function activeUsersProcessing() {
   logger.debug(listOfDynamicLists);
   const newUserCountMap = {};
   const participantsSpeakingTimes = [];
@@ -163,8 +163,8 @@ function handleStop() {
   const speakingParticipantsPath = path.join(directoryPath, 'output_data.csv');
   fs.writeFileSync(speakingParticipantsPath, eachSpeakingParticipantTime);
 }
-// Register the handleStop function for the SIGINT signal
-process.on('SIGINT', handleStop);
+// Register the activeUsersProcessing function for the SIGINT signal
+
 module.exports = {
   streamScrapping: startScrapping, stopScrapping,
 };
