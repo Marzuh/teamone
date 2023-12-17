@@ -4,40 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Save Stream</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .form-container {
+            text-align: center;
+            background-color: #2196F3;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            margin: 10px;
+        }
+
+        .form-container label {
+            display: block;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .form-container input[type="text"],
+        .form-container input[type="datetime-local"],
+        .form-container input[type="duration"],
+        .form-container button {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function submitForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const url = form.url.value;
+            const startTime = new Date(form.startTime.value).toISOString();
+            const duration = form.duration.value;
+            const username = form.username.value;
+
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url, startTime, duration, username }),
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
 </head>
 <body>
-<div class="container">
-    <div class="app-info-section">
-        <h1>Stream Saving Application</h1>
-        <p>Our application allows you to easily save information about Microsoft Teams meetings. Fill out the form below with the necessary details to get started.</p>
-        <p>Ensure that you enter a valid URL and directory.</p>
-    </div>
-    <div class="form-container">
-        <h2>Stream Saving Form</h2>
-        <form action="/save" method="post">
-            <!-- Form fields go here -->
-            <label for="url">Web Page Link:</label>
-            <input type="url" id="url" name="url" required aria-label="Web Page Link">
+<div class="form-container">
+    <h2 style="color: white;">Stream Saving Form</h2>
+    <form onsubmit="submitForm(event)">
+        <label for="url">Web Page Link:</label>
+        <input type="text" id="url" name="url" required>
 
-            <label for="saveDirectory">Save Directory:</label>
-            <input type="text" id="saveDirectory" name="saveDirectory" required aria-label="Save Directory">
+        <label for="startTime">Start Time (Local Timezone):</label>
+        <input type="datetime-local" id="startTime" name="startTime" required>
 
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" aria-label="Username">
+        <label for="duration">Duration (minutes):</label>
+        <input type="number" id="duration" name="duration" min="1" required>
 
-            <button type="submit">Start</button>
-        </form>
-    </div>
-    <div class="additional-info-section">
-        <h2>Why Choose Our Stream Saving Application?</h2>
-        <ul>
-            <li>Effortlessly capture and analyze the dynamic details of Microsoft Teams meetings.</li>
-            <li>Seamlessly record and save the stream of your meetings for future reference.</li>
-            <li>Ensure secure and reliable storage of your meeting data.</li>
-        </ul>
-    </div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <button type="submit">Start</button>
+    </form>
 </div>
-<script src="script.js"></script>
 </body>
 </html>
