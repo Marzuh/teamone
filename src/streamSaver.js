@@ -131,9 +131,9 @@ async function saveStream(url, username, saveDirectory) {
 
   await chooseMeetingInBrowser(page);
 
-  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/_#/modern-calling/', { timeout: timeoutDuration });
-  const iframe = await page.$('iframe');
-  const iframeContentFrame = await iframe.contentFrame();
+  await page.waitForFunction(() => window.location.href === 'https://teams.microsoft.com/v2/?meetingjoin=true', { timeout: timeoutDuration });
+  //const iframe = await page.$('iframe');
+  //const iframeContentFrame = await iframe.contentFrame();
 
   const datetime = Date.now().toString();
 
@@ -142,14 +142,14 @@ async function saveStream(url, username, saveDirectory) {
     fs.mkdirSync(newFolderPath, { recursive: true });
   }
 
-  await turnOffCamera(iframeContentFrame);
-  await turnOffMicrophone(iframeContentFrame);
-  await enterUsername(iframeContentFrame, username);
-  await joinTheMeeting(iframeContentFrame);
+  await turnOffCamera(page);
+  await turnOffMicrophone(page);
+  await enterUsername(page, username);
+  await joinTheMeeting(page);
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(iframeContentFrame, datetime, newFolderPath);
+  await streamScrapping.streamScrapping(page, datetime, newFolderPath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;

@@ -8,12 +8,12 @@ const fs = require('fs');
 
 
 // Finding string of muted user, detecting the unique string of not speaking user
-async function findStringOfNotSpeakingUser(participantsListElement) {
+async function findStringOfNotSpeakingUser(randomParticipants) {
   let mutedState = null;
-  const randomParticipants = await participantsListElement.$$('[data-cid="roster-participant"]');
   for (const participantElement of randomParticipants) {
-    const stateElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
-    const state = await stateElement.evaluate((element) => element.getAttribute('class'));
+    const classAttribute = await participantElement.$eval('.ui-list__itemmedia', element => element.outerHTML);
+    const matches = classAttribute.match(/class="(.*?)"/g);
+    const state = matches && matches.length >= 2 ? matches[1].replace('class="', '').replace('"', '') : null;
     const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
     const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
     if (mute === 'roster-participant-muted') {
@@ -21,11 +21,11 @@ async function findStringOfNotSpeakingUser(participantsListElement) {
       break;
     }
   }
-  return mutedState;
+  return mutedState.toString();
 }
 
 const allSpeakingUsers = [];
-async function scrapeStream(iframeContentFrame, datetime, newFolderPath) {
+async function scrapeStream(page, datetime, newFolderPath) {
   directoryPath = newFolderPath;
   // eslint-disable-next-line no-template-curly-in-string
   const csvFileName = `meeting-data.csv`; // Combine datetime with the filename
@@ -54,12 +54,13 @@ async function scrapeStream(iframeContentFrame, datetime, newFolderPath) {
   await csvParticipantsWriter.writeRecords([]);
 
   const participantsButton = '#roster-button';
-  await iframeContentFrame.waitForSelector(participantsButton);
-  await iframeContentFrame.click(participantsButton);
+  await page.waitForSelector(participantsButton);
+  await page.click(participantsButton);
   logger.debug('click');
 
-  const participantsListElement = await iframeContentFrame.waitForSelector('[data-tid="app-layout-area--end"]');
-  const stringOfNotSpeakingUser = await findStringOfNotSpeakingUser(participantsListElement);
+  const participantsListElement = await page.waitForSelector('.virtual-tree-list-scroll-container');
+  const randomParticipants = await participantsListElement.$$('[data-cid="roster-participant"]');
+  const stringOfNotSpeakingUser = await findStringOfNotSpeakingUser(randomParticipants);
   const pollParticipants = async () => {
     const currentTimestamp = new Date().toISOString();
     const participants = await participantsListElement.$$('[data-cid="roster-participant"]');
@@ -68,10 +69,10 @@ async function scrapeStream(iframeContentFrame, datetime, newFolderPath) {
     logger.debug('start scrapping participants names');
     for (const participantElement of participants) {
       try {
-        const nameElement = await participantElement.$('span');
-        const name = await nameElement.evaluate((element) => element.textContent.trim());
-        const speakingStringElement = await participantElement.$('div.ui-list__itemmedia.ka > div');
-        let speakingString = await speakingStringElement.evaluate((element) => element.getAttribute('class'));
+        const name = await participantElement.$eval('.fui-StyledText', span => span.getAttribute('title'));
+        const classAttribute = await participantElement.$eval('.ui-list__itemmedia', element => element.outerHTML);
+        const matches = classAttribute.match(/class="(.*?)"/g);
+        let speakingString = matches && matches.length >= 2 ? matches[1].replace('class="', '').replace('"', '') : null;
         const muteElement = await participantElement.$('div.fui-Flex.hide-on-list-item-hover svg[data-cid]');
         const mute = await muteElement.evaluate((element) => element.getAttribute('data-cid'));
 
