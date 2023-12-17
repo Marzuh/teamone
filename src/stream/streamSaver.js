@@ -15,9 +15,10 @@ const browserAgs = {
   executablePath: browserPath,
   timeout: 0,
   ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
-  args: ['--start-fullscreen'],
+  args: ['--start-maximized'],
+  // args: ['--start-fullscreen'],
 };
-//   args: ['--start-maximized'] use this args for default browser view
+//    use this args for default browser view
 const timeoutDuration = 0;
 
 async function chooseMeetingInBrowser(page) {
