@@ -1,10 +1,12 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
-const logger = require('./logger');
+const logger = require('../logger');
 let directoryPath;
 const fs = require('fs');
 // List to hold all the lists of participants who spoke every 2 seconds
 const listOfDynamicLists = [];
+
+const SELECTOR_WAITING_TIMEOUT = 65000;
 
 
 // Finding string of muted user, detecting the unique string of not speaking user
@@ -24,7 +26,7 @@ async function findStringOfNotSpeakingUser(listOfParticipants) {
   return mutedState;
 }
 
-async function scrapeStream(page, datetime, newFolderPath) {
+async function startScrapping(page, datetime, newFolderPath) {
   directoryPath = newFolderPath;
   const meetingDataFile = `meeting-data.csv`;
   const meetingDataPath = path.join(directoryPath, meetingDataFile);
@@ -43,7 +45,7 @@ async function scrapeStream(page, datetime, newFolderPath) {
     path: dynamicFilePath,
     append: false, // Append records to an existing file
     header: [
-      { id: 'timestamp', title: 'Timestamp' },
+      { id: 'timestamp', title: 'Timestamp (UTC)' },
       { id: 'participants', title: 'Participants' },
     ],
   });
@@ -52,11 +54,11 @@ async function scrapeStream(page, datetime, newFolderPath) {
   await meetingDataWriter.writeRecords([]);
 
   const participantsButton = '#roster-button';
-  await page.waitForSelector(participantsButton);
+  await page.waitForSelector(participantsButton, { timeout: SELECTOR_WAITING_TIMEOUT });
   await page.click(participantsButton);
   logger.debug('Show participants button is clicked ...');
 
-  const participantsListElement = await page.waitForSelector('.virtual-tree-list-scroll-container');
+  const participantsListElement = await page.waitForSelector('.virtual-tree-list-scroll-container', { timeout: SELECTOR_WAITING_TIMEOUT });
   const listOfParticipants = await participantsListElement.$$('[data-cid="roster-participant"]');
   const stringOfNotSpeakingUser = await findStringOfNotSpeakingUser(listOfParticipants);
   const pollParticipants = async () => {

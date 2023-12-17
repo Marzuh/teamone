@@ -1,22 +1,24 @@
 const { launch, getStream } = require('puppeteer-stream');
 const { exec } = require('child_process');
-const fs = require('fs');
-const logger = require('./logger');
-const streamScrapping = require('./streamScrapping');
 const path = require('path');
+const fs = require('fs');
+const logger = require('../logger');
+const streamScrapping = require('./streamScrapping');
+const { stopScrapping } = require('./streamScrapping');
 
-// const browserPath = '/usr/bin/google-chrome';
+const browserPath = '/usr/bin/google-chrome';
 // const browserPath = 'C:\\program Files\\Google\\Chrome\\Application\\chrome.exe';
-const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+// const browserPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const browserAgs = {
   headless: false,
   executablePath: browserPath,
   timeout: 0,
   ignoreDefaultArgs: ['--enable-automation', '--use-fake-ui-for-media-stream'],
-  args: ['--start-fullscreen'],
+  args: ['--start-maximized'],
+  // args: ['--start-fullscreen'],
 };
-//   args: ['--start-maximized'] use this args for default browser view
+//    use this args for default browser view
 const timeoutDuration = 0;
 
 async function chooseMeetingInBrowser(page) {
@@ -108,15 +110,16 @@ async function setupPageViewport(page) {
   });
 }
 
-async function closeNoCameraNotification(iframeContentFrame) {
-  const closeNotificationButton = 'button#close_button';
-  logger.debug(`Waiting for "${closeNotificationButton}" in the iframe content frame.`);
-  await iframeContentFrame.waitForSelector(closeNotificationButton, { timeout: timeoutDuration });
-  logger.debug(`Selector "${closeNotificationButton}" found in the iframe content frame.`);
-  await iframeContentFrame.click(closeNotificationButton);
+function createDirectorySync(directoryPath) {
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+    logger.debug(`Directory created: ${directoryPath}`);
+  } else {
+    logger.debug(`Directory already exists: ${directoryPath}`);
+  }
 }
 
-async function saveStream(url, username, saveDirectory) {
+async function saveStream(url, username, maxDuration) {
   const browser = await launch(browserAgs);
   const context = browser.defaultBrowserContext();
   await context.clearPermissionOverrides();
@@ -135,11 +138,6 @@ async function saveStream(url, username, saveDirectory) {
 
   const datetime = Date.now().toString();
 
-  const newFolderPath = path.join(saveDirectory, datetime);
-  if (!fs.existsSync(newFolderPath)) {
-    fs.mkdirSync(newFolderPath, { recursive: true });
-  }
-
   await turnOffCamera(page);
   await turnOffMicrophone(page);
   await enterUsername(page, username);
@@ -147,30 +145,43 @@ async function saveStream(url, username, saveDirectory) {
   // await closeNoCameraNotification(iframeContentFrame);
 
   logger.debug('start scrapping');
-  await streamScrapping.streamScrapping(page, datetime, newFolderPath);
+  const saveDirAbsolutePath = path.resolve('meeting_data', datetime);
+  logger.warn('save path', saveDirAbsolutePath);
+  createDirectorySync(saveDirAbsolutePath);
+  const fileName = path.join(saveDirAbsolutePath, 'meeting.mp4');
+  logger.warn('file: ', fileName);
+  const scrapperIntervalId = streamScrapping.streamScrapping(page, datetime, saveDirAbsolutePath);
   const stream = await getStream(page, { audio: true, video: true, frameSize: 1000 });
   const resolution = '1280*720';
   const frameRate = 30;
-  const saveDirectoryPath = `${newFolderPath}\\'stream'.mp4`;
 
-  logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, saveDirectoryPath);
+  logger.debug('Recording from %s with %s resolution and %s fps to %s', url, resolution, frameRate, fileName);
 
-  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${saveDirectoryPath}`);
+  const ffmpeg = exec(`ffmpeg -y -i - -c:v libx264 -c:a aac -s ${resolution} -r ${frameRate} ${fileName}`);
+
   ffmpeg.stderr.on('data', (chunk) => {
     logger.debug('stream data event occurs. Chunk: %s', chunk.toString());
   });
 
-  stream.on('close', () => {
-    logger.debug('stream close event occurs');
+  stream.on('error', (error) => {
+    logger.debug('Stream error:', error);
     ffmpeg.stdin.end();
+  });
+
+  stream.on('close', async () => {
+    logger.debug('stream close event occurs');
+    // await ffmpeg.stdin.end();
+    stopScrapping(scrapperIntervalId);
+    await browser.close();
   });
 
   stream.pipe(ffmpeg.stdin);
 
   setTimeout(async () => {
     logger.debug('stream destroyed by timer');
+    await ffmpeg.stdin.end();
     stream.destroy();
-  }, 1000 * 300);
+  }, maxDuration);
 
   // TODO: revert comment. right now it broke stream closing and media saving
   // await browser.close();
