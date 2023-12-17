@@ -162,6 +162,6 @@ function handleStop() {
 // Register the handleStop function for the SIGINT signal
 process.on('SIGINT', handleStop);
 module.exports = {
-  streamScrapping: startScrapping(),
+  streamScrapping: startScrapping,
   handleStop,
 };
